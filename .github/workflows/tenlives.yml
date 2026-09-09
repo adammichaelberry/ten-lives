@@ -1,0 +1,38 @@
+name: Ten Lives
+on:
+  schedule:
+    - cron: "0 20 * * *"
+    - cron: "0 8 * * *"
+    - cron: "0 2,5,11,14 * * 6"
+    - cron: "*/30 * * * 4,5,6,0"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: data
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install requests openpyxl
+      - name: Update data + odds alerts
+        if: github.event.schedule != '*/30 * * * 4,5,6,0'
+        env:
+          SHEET_URL: ${{ secrets.SHEET_URL }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          MOVE_ALERT: ${{ vars.MOVE_ALERT }}
+        run: python fetch_data.py --notify
+      - name: Kick-off pings
+        if: github.event.schedule == '*/30 * * * 4,5,6,0'
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          QUIET_HOURS: ${{ vars.QUIET_HOURS }}
+        run: python kickoff.py
+      - name: Commit
+        run: |
+          git config user.name "ten-lives-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -A data.js odds_snapshot.json kickoff_state.json Power_4_Survivor_2026.xlsx 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "bot: $(date -u +'%Y-%m-%d %H:%M UTC')" && git push)
