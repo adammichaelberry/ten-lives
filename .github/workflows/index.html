@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ten Lives · CFB survivor picks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --turf:#143826; --turf-deep:#0E2A1C; --chalk:#F3F1E6; --chalk-dim:#B7C2B5;
+  --amber:#FFB020; --flag:#F5E31B; --good:#4BE39B; --bad:#FF5F5F; --ink:#0A1A12;
+  --panel:rgba(10,26,18,.55); --line:rgba(243,241,230,.14);
+  --display:'Bebas Neue',Impact,sans-serif; --body:'Barlow',system-ui,sans-serif; --cond:'Barlow Condensed',var(--body);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--turf);color:var(--chalk);font-family:var(--body);font-size:15px;line-height:1.35}
+body{background-image:
+  repeating-linear-gradient(90deg, rgba(243,241,230,.06) 0 2px, transparent 2px 120px),
+  linear-gradient(180deg, var(--turf) 0%, var(--turf-deep) 100%);
+  background-attachment:fixed;min-height:100vh}
+a{color:inherit}
+button{font-family:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+
+/* ---------- top scoreboard ---------- */
+header{position:sticky;top:0;z-index:20;background:var(--ink);border-bottom:3px solid var(--amber);box-shadow:0 8px 30px rgba(0,0,0,.45)}
+.bar{max-width:1500px;margin:0 auto;padding:10px 22px;display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-size:38px;letter-spacing:.04em;line-height:1;color:var(--amber);display:flex;align-items:baseline;gap:10px}
+.brand small{font-family:var(--cond);font-size:13px;letter-spacing:.18em;color:var(--chalk-dim);text-transform:uppercase}
+.lives{display:flex;gap:2px;align-items:center}
+.lives .ball{width:26px;height:26px;transition:transform .2s}
+.lives .ball.lost{filter:grayscale(1) brightness(.45);transform:rotate(25deg) scale(.85)}
+.lives button{background:none;border:0;padding:0;line-height:0}
+.stat{font-family:var(--cond);text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:var(--chalk-dim)}
+.stat b{display:block;font-family:var(--display);font-size:30px;letter-spacing:.03em;color:var(--chalk);line-height:1}
+.stat b.warn{color:var(--amber)}
+.weeksel{display:flex;gap:4px;flex-wrap:wrap}
+.weeksel button{background:transparent;border:1px solid var(--line);border-radius:6px;padding:6px 9px;font-family:var(--cond);font-weight:600;font-size:14px;color:var(--chalk-dim)}
+.weeksel button.now{border-color:var(--amber);color:var(--amber)}
+.weeksel button.on{background:var(--amber);color:var(--ink);border-color:var(--amber)}
+.weeksel button.done{opacity:.45}
+.spacer{flex:1}
+.tabs{display:flex;gap:2px;background:rgba(255,255,255,.06);border-radius:8px;padding:3px}
+.tabs button{border:0;background:transparent;padding:7px 14px;border-radius:6px;font-family:var(--cond);font-weight:700;font-size:15px;letter-spacing:.04em;color:var(--chalk-dim)}
+.tabs button.on{background:var(--chalk);color:var(--ink)}
+
+/* ---------- layout ---------- */
+main{max-width:1500px;margin:0 auto;padding:18px 22px 80px;display:grid;grid-template-columns:330px 1fr;gap:22px}
+@media (max-width:980px){main{grid-template-columns:1fr}}
+aside{position:sticky;top:96px;align-self:start;display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;backdrop-filter:blur(4px)}
+.panel h2{font-family:var(--display);font-size:22px;letter-spacing:.05em;margin:0 0 8px;color:var(--amber)}
+.panel h2 span{color:var(--chalk-dim);font-size:16px;margin-left:8px}
+.slot{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px dashed var(--line)}
+.slot:first-of-type{border-top:0}
+.slot img{width:34px;height:34px;object-fit:contain}
+.slot .who{flex:1;min-width:0}
+.slot .who b{font-family:var(--cond);font-size:17px;font-weight:700;display:block}
+.slot .who small{color:var(--chalk-dim);font-size:12px}
+.slot .pct{font-family:var(--display);font-size:24px;letter-spacing:.03em}
+.slot.empty{color:var(--chalk-dim);font-style:italic;font-size:13px}
+.slot.rec{background:linear-gradient(90deg, rgba(255,176,32,.12), transparent);margin:0 -16px;padding-left:16px;padding-right:16px}
+.slot button{border:1px solid var(--line);background:transparent;border-radius:6px;font-family:var(--cond);font-weight:600;font-size:12px;padding:3px 8px}
+.slot button.lock{background:var(--amber);color:var(--ink);border-color:var(--amber)}
+.slot .res{font-family:var(--display);font-size:20px;min-width:22px;text-align:center}
+.res.W{color:var(--good)} .res.L{color:var(--bad)}
+.hint{font-size:12.5px;color:var(--chalk-dim);margin-top:8px}
+.knob{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0}
+.knob input[type=range]{width:120px;accent-color:var(--amber)}
+.knob select{background:var(--ink);color:var(--chalk);border:1px solid var(--line);border-radius:6px;padding:3px 6px;font-family:inherit}
+.knob output{font-family:var(--cond);font-weight:700;min-width:28px;text-align:right}
+
+/* ---------- toolbar ---------- */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:6px 12px;font-family:var(--cond);font-weight:600;font-size:14px;letter-spacing:.02em;color:var(--chalk-dim)}
+.chip.on{background:var(--chalk);color:var(--ink);border-color:var(--chalk)}
+.toolbar input[type=search]{background:var(--ink);border:1px solid var(--line);color:var(--chalk);border-radius:8px;padding:7px 12px;font-family:inherit;font-size:14px;min-width:170px}
+.toolbar select{background:var(--ink);color:var(--chalk);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-family:inherit}
+.count{margin-left:auto;font-family:var(--cond);color:var(--chalk-dim);font-size:14px}
+
+/* ---------- team cards ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.card{position:relative;padding-top:22px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;display:grid;grid-template-columns:64px 1fr;gap:12px;transition:transform .15s,border-color .15s;overflow:hidden}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--team)}
+.card:hover{transform:translateY(-2px);border-color:rgba(243,241,230,.3)}
+.card.rec{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber), 0 10px 30px rgba(255,176,32,.12)}
+.card.used{opacity:.5}
+.home-badge{position:absolute;left:14px;top:0;background:var(--chalk);color:var(--ink);font-family:var(--cond);font-weight:700;font-size:10px;letter-spacing:.14em;padding:3px 7px 4px;border-radius:0 0 6px 6px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.home-badge.neutral{background:var(--chalk-dim)}
+.card.used .rec-badge{display:none}
+.card img{width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
+.card .head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.card .name{font-family:var(--display);font-size:26px;letter-spacing:.03em;line-height:1}
+.card .tag{font-family:var(--cond);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--chalk-dim)}
+.card .ranks{font-family:var(--cond);font-size:13px;color:var(--chalk-dim);margin-top:2px}
+.card .ranks b{color:var(--chalk)}
+.matchup{margin-top:8px;display:flex;align-items:center;gap:8px}
+.matchup .opp{font-family:var(--cond);font-weight:600;font-size:16px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.matchup .opp small{color:var(--chalk-dim);font-weight:500;margin-right:4px}
+.matchup .line{font-family:var(--display);font-size:22px;letter-spacing:.03em}
+.matchup .src{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--chalk-dim);border:1px solid var(--line);border-radius:4px;padding:1px 4px}
+.kick{font-family:var(--cond);font-size:12px;color:var(--chalk-dim);margin-top:3px;letter-spacing:.02em}
+.prob{margin-top:7px;display:flex;align-items:center;gap:8px}
+.prob .track{flex:1;height:8px;background:rgba(0,0,0,.35);border-radius:4px;overflow:hidden;position:relative}
+.prob .track i{display:block;height:100%;background:var(--good);border-radius:4px}
+.prob .track i.mid{background:var(--amber)} .prob .track i.low{background:var(--bad)}
+.prob .track::after{content:"";position:absolute;top:0;bottom:0;left:var(--comfort);width:2px;background:var(--chalk)}
+.prob .pct{font-family:var(--display);font-size:22px;letter-spacing:.03em;min-width:48px;text-align:right}
+.flag{display:inline-flex;align-items:center;gap:6px;background:var(--flag);color:var(--ink);font-family:var(--cond);font-weight:700;font-size:13px;letter-spacing:.04em;padding:4px 9px;border-radius:5px;margin-top:8px;transform:rotate(-1.5deg)}
+.flag::before{content:"!";font-family:var(--display);font-size:20px;line-height:1}
+.alts{margin-top:9px;display:flex;flex-wrap:wrap;gap:5px}
+.alts span{font-family:var(--cond);font-size:12px;border:1px solid var(--line);border-radius:5px;padding:2px 7px;color:var(--chalk-dim)}
+.alts span b{color:var(--chalk)}
+.alts span.star{border-color:var(--amber);color:var(--amber)}
+.alts span.star b{color:var(--amber)}
+.foot{margin-top:9px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--chalk-dim)}
+.foot .spacer{flex:1}
+.pick{border:1px solid var(--line);background:transparent;border-radius:7px;font-family:var(--cond);font-weight:700;font-size:13px;letter-spacing:.05em;padding:5px 11px}
+.pick.on{background:var(--chalk);color:var(--ink);border-color:var(--chalk)}
+.home-badge{position:absolute;left:14px;top:0;background:var(--chalk);color:var(--ink);font-family:var(--cond);font-weight:700;font-size:10px;letter-spacing:.14em;padding:3px 7px 4px;border-radius:0 0 6px 6px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.home-badge.neutral{background:var(--chalk-dim)}
+.rec-badge{position:absolute;top:10px;right:-30px;background:var(--amber);color:var(--ink);font-family:var(--cond);font-weight:700;font-size:11px;letter-spacing:.14em;padding:3px 36px;transform:rotate(35deg)}
+.cost{color:var(--chalk-dim)} .cost.hot{color:var(--amber)}
+
+/* ---------- season grid ---------- */
+.plan{overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.plan table{border-collapse:collapse;font-family:var(--cond);font-size:13px;min-width:100%}
+.plan th,.plan td{padding:4px 6px;text-align:center;border-bottom:1px solid rgba(243,241,230,.07);white-space:nowrap}
+.plan th{font-weight:600;color:var(--chalk-dim);position:sticky;top:0;background:var(--ink);z-index:2}
+.plan th.now{color:var(--amber)}
+.plan td.team{text-align:left;position:sticky;left:0;background:var(--ink);z-index:1;font-weight:700;font-size:14px}
+.plan td.team img{width:20px;height:20px;vertical-align:middle;margin-right:6px}
+.plan td.cell{width:58px;color:var(--ink);font-weight:700}
+.plan td.cell.x{background:repeating-linear-gradient(45deg,transparent 0 4px,rgba(245,227,27,.28) 4px 6px);color:var(--chalk-dim);font-weight:500}
+.plan td.cell.bye{color:rgba(243,241,230,.25)}
+.plan td.cell.pick{outline:2px solid var(--amber);outline-offset:-2px}
+.plan td.cell.used{outline:2px solid var(--chalk);outline-offset:-2px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--chalk-dim);margin:10px 2px}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+
+/* ---------- team view ---------- */
+.tv{display:grid;grid-template-columns:250px 1fr;gap:16px}
+@media (max-width:1100px){.tv{grid-template-columns:1fr}}
+.tv-list{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;max-height:calc(100vh - 150px);overflow:auto}
+.tv-list input{width:100%;background:var(--ink);border:1px solid var(--line);color:var(--chalk);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:14px;margin-bottom:8px}
+.tv-list .confs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.tv-list .confs .chip{padding:3px 8px;font-size:12px}
+.tv-list button.t{display:flex;align-items:center;gap:8px;width:100%;border:0;background:transparent;padding:5px 6px;border-radius:7px;font-family:var(--cond);font-weight:600;font-size:15px;text-align:left}
+.tv-list button.t:hover{background:rgba(243,241,230,.07)}
+.tv-list button.t.on{background:var(--chalk);color:var(--ink)}
+.tv-list button.t img{width:22px;height:22px;object-fit:contain}
+.tv-list button.t small{margin-left:auto;color:var(--chalk-dim);font-size:11px}
+.tv-list button.t.on small{color:var(--ink)}
+.tv-list button.t.used{opacity:.45}
+.tv-hero{display:flex;align-items:center;gap:16px;background:var(--panel);border:1px solid var(--line);border-left:8px solid var(--team);border-radius:12px;padding:14px 18px;margin-bottom:12px;flex-wrap:wrap}
+.tv-hero img{width:72px;height:72px;object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
+.tv-hero .name{font-family:var(--display);font-size:38px;letter-spacing:.03em;line-height:1}
+.tv-hero .sub{font-family:var(--cond);color:var(--chalk-dim);font-size:14px;margin-top:4px}
+.tv-hero .stats{margin-left:auto;display:flex;gap:22px}
+.tv-sched{display:flex;flex-direction:column;gap:6px}
+.mu{display:grid;grid-template-columns:64px 44px 1fr 90px 160px 56px 110px;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px}
+.mu.plan{border-color:var(--amber)} .mu.used{border-color:var(--chalk)} .mu.illegal{opacity:.75}
+.mu .wk{font-family:var(--display);font-size:24px;letter-spacing:.03em;line-height:1}
+.mu .wk small{display:block;font-family:var(--cond);font-size:11px;color:var(--chalk-dim);letter-spacing:.05em}
+.mu img{width:40px;height:40px;object-fit:contain}
+.mu .opp{font-family:var(--cond);font-weight:700;font-size:18px;min-width:0}
+.mu .opp small{font-weight:500;color:var(--chalk-dim);font-size:13px;display:block}
+.mu .venue{font-family:var(--cond);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--chalk-dim)}
+.mu .venue.home{color:var(--chalk)}
+.mu .line{font-family:var(--display);font-size:22px;letter-spacing:.03em;white-space:nowrap}
+.mu .line .src{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--chalk-dim);border:1px solid var(--line);border-radius:4px;padding:1px 4px;font-family:var(--body);margin-left:6px;vertical-align:middle}
+.mu .prob{margin:0;grid-column:span 2}
+.mu .flag{margin:0;grid-column:span 3;justify-self:start}
+.mu .note{font-family:var(--cond);font-size:12px;color:var(--amber);text-align:right;grid-column:1/-1;margin-top:-4px}
+@media (max-width:760px){.mu{grid-template-columns:52px 36px 1fr 70px;row-gap:4px}.mu .prob,.mu .flag{grid-column:1/-1}.mu .line{grid-column:span 2}}
+/* ---------- rivals ---------- */
+.standings{overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel);margin-bottom:14px}
+.standings table{border-collapse:collapse;font-family:var(--cond);font-size:14px;width:100%}
+.standings th,.standings td{padding:6px 8px;text-align:center;border-bottom:1px solid rgba(243,241,230,.07);white-space:nowrap;vertical-align:middle}
+.standings th{font-weight:600;color:var(--chalk-dim);position:sticky;top:0;background:var(--ink);z-index:2;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.standings th.now{color:var(--amber)}
+.standings td.player{text-align:left;font-weight:700;font-size:16px;position:sticky;left:0;background:var(--ink);z-index:1}
+.standings tr.me td{background:rgba(255,176,32,.09)} .standings tr.me td.player{color:var(--amber);background:#1a1a0f}
+.standings tr.out td{opacity:.45}
+.standings .balls{display:inline-flex;gap:2px} .standings .balls i{display:inline-block;width:12px;height:8px;border-radius:50%;background:#8B4A1E;transform:rotate(-35deg)} .standings .balls i.lost{background:#3a3a3a}
+.standings .num{font-family:var(--display);font-size:20px;letter-spacing:.03em}
+.standings .pk{display:inline-flex;gap:3px;flex-wrap:wrap;justify-content:center;max-width:150px}
+.standings .pk img{width:24px;height:24px;object-fit:contain;border-radius:4px;padding:1px;background:rgba(0,0,0,.25);border:2px solid transparent}
+.standings .pk img.W{border-color:var(--good)} .standings .pk img.L{border-color:var(--bad)} .standings .pk img.X{border-color:var(--flag)}
+.crowd{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.crowd span{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:3px 10px 3px 4px;font-family:var(--cond);font-size:14px;font-weight:600}
+.crowd span img{width:22px;height:22px;object-fit:contain}
+.crowd span small{color:var(--chalk-dim);font-weight:500}
+.crowd span.W{border-color:var(--good)} .crowd span.L{border-color:var(--bad)}
+.empty{padding:40px;text-align:center;color:var(--chalk-dim)}
+.empty h3{font-family:var(--display);font-size:28px;letter-spacing:.04em;color:var(--amber);margin:0 0 6px}
+footer{max-width:1500px;margin:0 auto;padding:0 22px 30px;font-size:12px;color:var(--chalk-dim)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <div class="brand">Ten Lives <small>CFB survivor · 2026</small></div>
+  <div class="lives" id="lives" title="Click a ball to record a life lost/regained"></div>
+  <div class="stat">Expected lives lost<br><b id="exp">–</b></div>
+  <div class="stat">Teams left<br><b id="left">–</b></div>
+  <div class="spacer"></div>
+  <div class="weeksel" id="weeks"></div>
+  <div class="tabs"><button class="on" data-tab="week">This week</button><button data-tab="plan">Season plan</button><button data-tab="team">Team view</button><button data-tab="rivals">Rivals</button></div>
+</div></header>
+
+<main>
+<aside>
+  <div class="panel">
+    <h2>Week <span id="wkTitle"></span></h2>
+    <div id="slots"></div>
+    <div class="hint" id="slotHint"></div>
+  </div>
+  <div class="panel">
+    <h2>Model</h2>
+    <div class="knob"><label>Ratings</label><select id="ratings"><option value="blend">FPI + Sagarin</option><option value="fpi">FPI only</option><option value="sag">Sagarin only</option></select></div>
+    <div class="knob"><label>Objective</label><select id="obj"><option value="lin">Fewest lives lost</option><option value="log">Survive longest</option></select></div>
+    <div class="knob"><label>Plan through week</label><span><input type="range" id="horizon" min="1" max="13" step="1" value="13"><output id="horizonOut">15</output></span></div>
+    <div class="knob"><label>Future uncertainty</label><span><input type="range" id="drift" min="0" max="6" step="0.5" value="2.5"><output id="driftOut">2.5</output></span></div>
+    <div class="knob"><label>Home advantage</label><span><input type="range" id="hfa" min="0" max="5" step="0.5" value="2.5"><output id="hfaOut">2.5</output></span></div>
+    <div class="knob"><label>“Comfortable” at</label><span><input type="range" id="comfort" min="7" max="35" step="1" value="21"><output id="comfortOut">21</output></span></div>
+    <div class="hint">This week uses DraftKings lines where posted, otherwise the ratings. Future weeks project a spread from ESPN FPI and Sagarin (averaged) plus home advantage, with widening uncertainty per week ahead. Recommendations solve every week up to the horizon at once — each team is placed in its best legal week. If your comp usually ends by week 9, plan through week 9: the optimiser will then spend your best teams sooner.</div>
+  </div>
+  <div class="panel">
+    <h2>Data</h2>
+    <div class="hint" id="meta"></div>
+    <div class="hint" id="live"></div>
+    <div class="hint" style="margin-top:10px"><b style="color:var(--chalk)">Comp spreadsheet</b><br><span id="sheetStatus"></span></div>
+    <div class="hint" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+      <label class="chip" style="cursor:pointer">Load .xlsx<input type="file" id="sheetFile" accept=".xlsx" style="display:none"></label>
+      <button class="chip" id="sheetClear" style="display:none">Use published copy</button>
+      <button class="chip" id="reset">Clear my app picks</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Alerts</h2>
+    <div class="hint">Line-movement and kick-off pings go to an <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy.sh</a> topic. Install the ntfy app, subscribe to the topic, and paste it here to test.</div>
+    <div class="hint" style="display:flex;gap:6px;margin-top:6px"><input type="text" id="ntfy" placeholder="your-secret-topic" style="flex:1;background:var(--ink);border:1px solid var(--line);color:var(--chalk);border-radius:8px;padding:6px 10px;font-family:inherit"><button class="chip" id="ntfyTest">Test</button></div>
+    <div class="hint" id="ntfyLink"></div>
+  </div>
+</aside>
+
+<section id="view"></section>
+</main>
+<footer>Odds via ESPN/DraftKings · ratings ESPN FPI · logos ESPN. Win probability = Φ(margin / σ), σ = 13.5 pts this week, growing with weeks ahead.</footer>
+
+<script src="data.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(() => {
+if (!window.CFB_DATA) { document.getElementById('view').innerHTML = '<div class="empty"><h3>No data yet</h3>Run <code>python fetch_data.py</code> in this folder, then reload.</div>'; return; }
+const D = window.CFB_DATA;
+const T = D.teams;
+const POOL = Object.values(T).filter(t => t.pool).sort((a,b)=>a.name.localeCompare(b.name));
+const WEEKS = [...new Set(D.games.filter(g=>g.week>=1 && (T[g.home]?.pool || T[g.away]?.pool)).map(g=>g.week))].sort((a,b)=>a-b);   // week 0 isn't pickable; weeks with no pool games (champ week, Army–Navy) are dropped
+const SIGMA = 13.5, LIVES = 10;
+const cap = w => D.picksPerWeek?.[w] ?? D.defaultPicks ?? 5;
+const TOTAL_PICKS = () => WEEKS.reduce((n,w)=>n+cap(w),0);
+
+// ---------- state ----------
+const LS = 'tenlives-2026';
+let S = { picks:{}, livesAdj:0, view:D.currentWeek, tab:'week', conf:new Set(), q:'', hideUsed:true, legalOnly:false, homeOnly:false, team:null, tq:'', tconf:new Set(), tf:{illegal:true, flips:false, comfort:false, home:false, past:false}, sort:'p',
+          obj:'lin', ratings:'blend', drift:2.5, hfa:2.4, comfort:21, horizon:13, sheet:null, ntfy:'' };
+try { Object.assign(S, JSON.parse(localStorage.getItem(LS)||'{}')); S.conf = new Set(S.conf||[]); S.tconf = new Set(S.tconf||[]); S.tf = {illegal:true,flips:false,comfort:false,home:false,past:false,...(S.tf||{})}; } catch(e){}
+if (S.sheet && S.sheet.picks && (!D.picks || S.sheet.loadedAt > D.fetched)) D.picks = {...S.sheet.picks, source:'local'};
+const ME = D.picks?.players.find(p=>p.name===D.picks.me);
+if (ME) for (const w in ME.picks) S.picks[w] = ME.picks[w].slice();
+const save = () => { try { localStorage.setItem(LS, JSON.stringify({...S, conf:[...S.conf], tconf:[...S.tconf]})); } catch(e){} };
+
+// ---------- model ----------
+const Phi = x => 0.5*(1+erf(x/Math.SQRT2));
+function erf(x){ const s=Math.sign(x); x=Math.abs(x); const t=1/(1+0.3275911*x);
+  const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x); return s*y; }
+const gamesByTeamWeek = {};
+for (const g of D.games) { (gamesByTeamWeek[g.home+'|'+g.week] ??= []).push(g); (gamesByTeamWeek[g.away+'|'+g.week] ??= []).push(g); }
+
+// Assess a team in a week -> {game, opp, home, legal, reason, margin, src, p, result}
+function assess(t, w){
+  const gs = gamesByTeamWeek[t.id+'|'+w] || [];
+  if (!gs.length) return { legal:false, reason:'Bye week', p:0 };
+  const g = gs[0]; const home = g.home===t.id; const oppId = home?g.away:g.home; const opp = T[oppId];
+  const r = { game:g, opp, home, neutral:g.neutral, legal:true, p:0 };
+  if (!opp || opp.fbs===false) { r.legal=false; r.reason = `Non-FBS opponent · ${opp?opp.name:'?'}`; }
+  const hfa = g.neutral?0:(home?S.hfa:-S.hfa); const parts=[], srcs=[];
+  if (S.ratings!=='sag' && opp && opp.fpi!=null && t.fpi!=null){ parts.push(t.fpi-opp.fpi+hfa); srcs.push('FPI'); }
+  if (S.ratings!=='fpi' && opp && opp.sag!=null && t.sag!=null){ parts.push(t.sag-opp.sag+hfa); srcs.push('SAG'); }
+  const mFpi = parts.length? parts.reduce((x,y)=>x+y,0)/parts.length : null; const mSrc = srcs.join('+');
+  const ahead = Math.max(0, w - D.currentWeek);
+  if (g.spread!=null && ahead===0) { r.margin = home? -g.spread : g.spread; r.src='DK'; }
+  else if (mFpi!=null) { r.margin = mFpi; r.src=mSrc; }
+  if (r.margin!=null) { const sig = Math.sqrt(SIGMA*SIGMA + (S.drift*ahead)**2); r.p = Phi(r.margin/sig); }
+  if (!r.legal) r.p = 0;
+  if (g.completed) { const my = home?g.homeScore:g.awayScore, th = home?g.awayScore:g.homeScore; r.result = my>th?'W':(my<th?'L':'T'); }
+  return r;
+}
+const val = p => S.obj==='log' ? Math.log(Math.max(p,1e-4))/9.2+1 : p;   // both in ~[0,1]
+
+// Hungarian (min cost), rows<=cols, cost[n][m]
+function hungarian(cost){
+  const n=cost.length, m=cost[0].length, INF=1e18;
+  const u=new Float64Array(n+1), v=new Float64Array(m+1), p=new Int32Array(m+1), way=new Int32Array(m+1);
+  for (let i=1;i<=n;i++){ p[0]=i; let j0=0; const minv=new Float64Array(m+1).fill(INF); const used=new Uint8Array(m+1);
+    do { used[j0]=1; const i0=p[j0]; let delta=INF, j1=0;
+      for (let j=1;j<=m;j++) if(!used[j]){ const cur=cost[i0-1][j-1]-u[i0]-v[j]; if(cur<minv[j]){minv[j]=cur;way[j]=j0;} if(minv[j]<delta){delta=minv[j];j1=j;} }
+      for (let j=0;j<=m;j++) if(used[j]){u[p[j]]+=delta; v[j]-=delta;} else minv[j]-=delta;
+      j0=j1; } while (p[j0]!==0);
+    do { const j1=way[j0]; p[j0]=p[j1]; j0=j1; } while (j0); }
+  const ans=new Int32Array(n).fill(-1); for (let j=1;j<=m;j++) if(p[j]) ans[p[j]-1]=j-1; return ans;
+}
+// Solve remaining season from week `from`. Returns {assign: teamId->week, total, byWeek}
+function solve(from, extraUsed=new Set(), capOverride={}, picksMap=S.picks){
+  const used = usedTeams(picksMap); const teams = POOL.filter(t=>!used.has(t.id) && !extraUsed.has(t.id));
+  const slots=[]; for (const w of WEEKS) if (w>=from && w<=S.horizon){ const locked=(picksMap[w]||[]).length; const n = capOverride[w] ?? Math.max(0,cap(w)-locked); for(let k=0;k<n;k++) slots.push(w); }
+  if (!teams.length || !slots.length) return {assign:{}, total:0};
+  const M = teams.map(t => slots.map(w => 1 - val(assess(t,w).p)));
+  let assign={}, total=0;
+  if (teams.length<=slots.length){ const a=hungarian(M); teams.forEach((t,i)=>{ if(a[i]>=0){ const w=slots[a[i]]; const p=assess(t,w).p; if(p>0){assign[t.id]=w; total+=val(p);} } }); }
+  else { const MT = slots.map((w,j)=>teams.map((t,i)=>M[i][j])); const a=hungarian(MT); slots.forEach((w,j)=>{ if(a[j]>=0){ const t=teams[a[j]]; const p=assess(t,w).p; if(p>0){assign[t.id]=w; total+=val(p);} } }); }
+  return {assign,total};
+}
+function usedTeams(picksMap=S.picks){ const s=new Set(); for (const w in picksMap) for (const id of picksMap[w]) s.add(id); return s; }
+// a pick loses a life if the team lost, or the game was illegal (non-FBS opponent / bye)
+function pickOutcome(id,w){ const a=assess(T[id],w); if(!a.legal) return 'X'; return a.result||null; }
+function livesLostFor(picksMap){ let n=0; for (const w in picksMap) for (const id of picksMap[w]){ const o=pickOutcome(id,+w); if(o==='L'||o==='X') n++; } return n; }
+
+// ---------- derived ----------
+let SOL=null, OPP={};
+function recompute(){
+  SOL = solve(D.currentWeek);
+  OPP = {};
+  if (S.view===D.currentWeek){ // opportunity cost of forcing each team into the current week
+    const locked=(S.picks[S.view]||[]).length; const free=Math.max(0,cap(S.view)-locked);
+    if (free>0) for (const t of POOL){ if (usedTeams().has(t.id)) continue; const a=assess(t,S.view); if(!a.legal) continue;
+      const alt = solve(D.currentWeek, new Set([t.id]), {[S.view]:free-1}); OPP[t.id] = SOL.total - (alt.total + val(a.p)); }
+  }
+}
+const recFor = w => POOL.filter(t=>SOL.assign[t.id]===w);
+function livesLost(){ return livesLostFor(S.picks)+S.livesAdj; }
+function expectedLost(){ let e=0; for (const id in SOL.assign) e += 1-assess(T[id],SOL.assign[id]).p; for (const w in S.picks) if(+w>=D.currentWeek) for(const id of S.picks[w]){ const a=assess(T[id],+w); if(!a.result) e+=1-a.p; } return e; }
+
+// ---------- render ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtLine = m => m==null?'—':(m>0?'−':'+')+Math.abs(m).toFixed(1);   // shown from the team's perspective (favourite = negative)
+const pct = p => Math.round(p*100)+'%';
+const cls = (p,c) => p>=Phi(c/SIGMA)?'':(p>=0.6?'mid':'low');
+
+function renderHeader(){
+  const lost=livesLost();
+  $('#lives').innerHTML = [...Array(LIVES).keys()].map(i=>`<button title="${i<lost?'Regain':'Lose'} a life" data-i="${i}"><svg class="ball ${i<lost?'lost':''}" viewBox="0 0 40 40"><ellipse cx="20" cy="20" rx="18" ry="11" transform="rotate(-35 20 20)" fill="#8B4A1E" stroke="#3a1f0c" stroke-width="1.5"/><path d="M14 22 L26 18 M17 19l1.8 2.5 M19.5 18.3l1.8 2.5 M22 17.6l1.8 2.5" stroke="#F3F1E6" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></button>`).join('');
+  $('#lives').querySelectorAll('button').forEach(b=>b.onclick=()=>{ const i=+b.dataset.i; const auto=livesLost()-S.livesAdj; S.livesAdj = (i<livesLost()? i : i+1) - auto; save(); render(); });
+  const e=expectedLost(); const el=$('#exp'); el.textContent=e.toFixed(1); el.className = (lost+e>=LIVES)?'warn':'';
+  $('#left').textContent = POOL.length - usedTeams().size;
+  $('#weeks').innerHTML = WEEKS.map(w=>`<button data-w="${w}" class="${w===S.view?'on':''} ${w===D.currentWeek?'now':''} ${w<D.currentWeek?'done':''}" title="${D.weekDates[w]||''}">W${w}</button>`).join('');
+  $('#weeks').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.view=+b.dataset.w; save(); render();});
+  document.querySelectorAll('.tabs button').forEach(b=>{ b.classList.toggle('on',b.dataset.tab===S.tab); b.onclick=()=>{S.tab=b.dataset.tab; save(); render();}; });
+  $('#wkTitle').textContent = `${S.view} · ${D.weekDates[S.view]||''}`;
+  $('#meta').innerHTML = `Fetched ${esc(D.fetched.replace('T',' '))}. Current week ${D.currentWeek}. ${POOL.length} pool teams across ${WEEKS.length} weeks — ${TOTAL_PICKS()} picks needed (6 in weeks 1–3, then 5).`;
+  $('#obj').value=S.obj; $('#ratings').value=S.ratings;
+  $('#sheetStatus').innerHTML = D.picks ? (D.picks.source==='local' ? `Using <b>${esc(S.sheet.name)}</b> loaded ${esc(S.sheet.loadedAt.replace('T',' ').slice(0,16))} · ${D.picks.players.length} players` : `Published copy from ${esc(D.fetched.replace('T',' '))} · ${D.picks.players.length} players`) : 'No comp picks loaded.';
+  $('#sheetClear').style.display = S.sheet ? '' : 'none';
+  $('#ntfy').value = S.ntfy; $('#ntfyLink').innerHTML = S.ntfy ? `Subscribe: <a href="https://ntfy.sh/${encodeURIComponent(S.ntfy)}" target="_blank" rel="noopener">ntfy.sh/${esc(S.ntfy)}</a> — set the same name as the <code>NTFY_TOPIC</code> secret in GitHub.` : ''; $('#horizon').value=S.horizon; $('#horizonOut').value=S.horizon; $('#drift').value=S.drift; $('#driftOut').value=S.drift; $('#hfa').value=S.hfa; $('#hfaOut').value=S.hfa; $('#comfort').value=S.comfort; $('#comfortOut').value=S.comfort;
+}
+function renderSlots(){
+  const picks = S.picks[S.view]||[]; const rec = recFor(S.view); const rows=[];
+  for (const id of picks){ const t=T[id], a=assess(t,S.view);
+    rows.push(`<div class="slot"><img src="${t.logo}" alt="" onerror="this.onerror=null;this.src=this.src.replace('500-dark','500')"><div class="who"><b>${esc(t.name)}</b><small>${a.opp?(a.home?'vs ':(a.neutral?'n ':'@ '))+esc(a.opp.name):'bye'} · ${fmtLine(a.margin)}</small></div>${a.result?`<span class="res ${a.result}">${a.result}</span>`:`<span class="pct">${pct(a.p)}</span>`}<button data-un="${id}">✕</button></div>`); }
+  for (const t of rec){ const a=assess(t,S.view);
+    rows.push(`<div class="slot rec"><img src="${t.logo}" alt="" onerror="this.onerror=null;this.src=this.src.replace('500-dark','500')"><div class="who"><b>${esc(t.name)}</b><small>${a.opp?(a.home?'vs ':(a.neutral?'n ':'@ '))+esc(a.opp.name):''} · ${fmtLine(a.margin)}</small></div><span class="pct">${pct(a.p)}</span><button class="lock" data-lock="${t.id}">Lock in</button></div>`); }
+  for (let i=rows.length;i<cap(S.view);i++) rows.push(`<div class="slot empty">— no legal team left for this slot —</div>`);
+  $('#slots').innerHTML=rows.join('');
+  const e = rec.reduce((s,t)=>s+1-assess(t,S.view).p,0);
+  $('#slotHint').textContent = rec.length? `Gold rows are the optimiser's picks for this week (≈${e.toFixed(2)} expected lives lost). Lock them in or pick your own from the cards.` : (picks.length>=cap(S.view)?`Week complete — ${cap(S.view)} locked in.`:'');
+  $('#slots').querySelectorAll('[data-lock]').forEach(b=>b.onclick=()=>togglePick(b.dataset.lock));
+  $('#slots').querySelectorAll('[data-un]').forEach(b=>b.onclick=()=>togglePick(b.dataset.un));
+}
+function togglePick(id){ const arr = S.picks[S.view] ??= []; const i=arr.indexOf(id); if(i>=0) arr.splice(i,1); else if(arr.length<cap(S.view) && !usedTeams().has(id)) arr.push(id); if(!arr.length) delete S.picks[S.view]; save(); render(); }
+
+function renderWeek(){
+  const used=usedTeams(); const confs=[...new Set(POOL.map(t=>t.conf))].sort();
+  let list = POOL.map(t=>({t, a:assess(t,S.view), used:used.has(t.id), usedWk:[...Object.entries(S.picks)].find(([w,ids])=>ids.includes(t.id))?.[0]}));
+  if (S.hideUsed) list=list.filter(x=>!x.used || x.usedWk==S.view);
+  if (S.legalOnly) list=list.filter(x=>x.a.legal);
+  if (S.homeOnly) list=list.filter(x=>x.a.game && x.a.home && !x.a.neutral);
+  if (S.conf.size) list=list.filter(x=>S.conf.has(x.t.conf));
+  if (S.q) { const q=S.q.toLowerCase(); list=list.filter(x=>(x.t.full+' '+x.t.abbr).toLowerCase().includes(q)); }
+  const sorters={ p:(a,b)=>b.a.p-a.a.p, fpi:(a,b)=>(a.t.fpiRank||999)-(b.t.fpiRank||999), name:(a,b)=>a.t.name.localeCompare(b.t.name), cost:(a,b)=>(OPP[a.t.id]??9)-(OPP[b.t.id]??9), plan:(a,b)=>(SOL.assign[a.t.id]||99)-(SOL.assign[b.t.id]||99) };
+  list.sort(sorters[S.sort]||sorters.p);
+  const comfortP = Phi(S.comfort/SIGMA);
+  const tb = `<div class="toolbar">
+    ${confs.map(c=>`<button class="chip ${S.conf.has(c)?'on':''}" data-conf="${esc(c)}">${esc(c)}</button>`).join('')}
+    <button class="chip ${S.hideUsed?'on':''}" id="fUsed">Hide used</button>
+    <button class="chip ${S.legalOnly?'on':''}" id="fLegal">Legal only</button>
+    <button class="chip ${S.homeOnly?'on':''}" id="fHome">Home games</button>
+    <input type="search" id="q" placeholder="Search team…" value="${esc(S.q)}">
+    <select id="sort"><option value="p">Sort: win chance</option><option value="cost">Sort: cheapest to use now</option><option value="fpi">Sort: FPI rank</option><option value="plan">Sort: planned week</option><option value="name">Sort: name</option></select>
+    <span class="count">${list.length} teams</span></div>`;
+  const cards = list.map(({t,a,used,usedWk})=>{
+    const rec = SOL.assign[t.id]===S.view && !used;
+    const alts = WEEKS.filter(w=>w>=D.currentWeek && w!==S.view).map(w=>({w,a:assess(t,w)})).filter(x=>x.a.legal).sort((x,y)=>y.a.p-x.a.p).slice(0,3);
+    const opp = a.opp? `<span class="opp"><small>${a.home?'vs':(a.neutral?'n':'@')}</small>${esc(a.opp.name)}${a.opp.ap?` <small>#${a.opp.ap}</small>`:''}</span>`:`<span class="opp"><small>bye</small></span>`;
+    const cost = OPP[t.id];
+    return `<div class="card ${rec?'rec':''} ${used&&usedWk!=S.view?'used':''}" style="--team:${t.color}">
+      ${rec?'<div class="rec-badge">PICK</div>':''}
+      ${a.game&&a.home&&!a.neutral?'<div class="home-badge">HOME</div>':(a.game&&a.neutral?'<div class="home-badge neutral">NEUTRAL</div>':'')}
+      <img src="${t.logo}" alt="" loading="lazy" onerror="this.onerror=null;this.src=this.src.replace('500-dark','500')">
+      <div>
+        <div class="head"><span class="name">${esc(t.name)}</span><span class="tag">${esc(t.conf)}</span></div>
+        <div class="ranks">FPI <b>#${t.fpiRank??'–'}</b> ${t.sagRank?`· SAG <b>#${t.sagRank}</b>`:''} ${t.ap?`· AP <b>#${t.ap}</b>`:''} ${t.wins+t.losses?`· <b>${t.wins}–${t.losses}</b>`:''}</div>
+        <div class="matchup">${opp}<span class="line">${fmtLine(a.margin)}</span>${a.src?`<span class="src">${a.src}</span>`:''}</div>
+        ${a.game?`<div class="kick">${(d=>`${d.toLocaleString('en-AU',{timeZone:'Australia/Sydney',weekday:'short',hour:'numeric',minute:'2-digit'})} Newcastle · ${d.toLocaleString('en-US',{timeZone:'America/Los_Angeles',weekday:'short',hour:'numeric',minute:'2-digit'})} Portland`)(new Date(a.game.date))}</div>`:''}
+        ${a.legal? `<div class="prob" style="--comfort:${comfortP*100}%"><div class="track"><i class="${cls(a.p,S.comfort)}" style="width:${a.p*100}%"></i></div><span class="pct">${a.result?`<span class="res ${a.result}">${a.result}</span>`:pct(a.p)}</span></div>`
+                 : `<div class="flag">${esc(a.reason)}</div>`}
+        <div class="alts">${alts.map(x=>`<span class="${SOL.assign[t.id]===x.w?'star':''}"><b>W${x.w}</b> ${x.a.home?'vs':(x.a.neutral?'n':'@')} ${esc(x.a.opp.name)} · ${pct(x.a.p)}</span>`).join('')||'<span>no other legal games</span>'}</div>
+        <div class="foot">
+          ${used&&usedWk!=S.view?`Used in week ${usedWk}`: (SOL.assign[t.id]&&!rec?`Planned for W${SOL.assign[t.id]}`:'')}
+          ${cost!=null && !used && !rec ? `<span class="cost ${cost>0.15?'hot':''}">· using now costs ${cost.toFixed(2)} expected wins</span>`:''}
+          <span class="spacer"></span>
+          ${!used||usedWk==S.view? `<button class="pick ${usedWk==S.view?'on':''}" data-pick="${t.id}" ${!a.legal||a.result?'disabled':''}>${usedWk==S.view?'Picked ✓':'Pick'}</button>`:''}
+        </div>
+      </div></div>`; }).join('');
+  $('#view').innerHTML = tb + (cards?`<div class="grid">${cards}</div>`:`<div class="empty"><h3>Nothing here</h3>Loosen the filters.</div>`);
+  $('#view').querySelectorAll('[data-conf]').forEach(b=>b.onclick=()=>{ const c=b.dataset.conf; S.conf.has(c)?S.conf.delete(c):S.conf.add(c); save(); render(); });
+  $('#fUsed').onclick=()=>{S.hideUsed=!S.hideUsed; save(); render();};
+  $('#fLegal').onclick=()=>{S.legalOnly=!S.legalOnly; save(); render();};
+  $('#fHome').onclick=()=>{S.homeOnly=!S.homeOnly; save(); render();};
+  $('#q').oninput=e=>{S.q=e.target.value; save(); renderWeek();};
+  $('#sort').value=S.sort; $('#sort').onchange=e=>{S.sort=e.target.value; save(); render();};
+  $('#view').querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>togglePick(b.dataset.pick));
+}
+function heat(p){ // red -> amber -> green
+  const h = p*120; return `hsl(${h} 70% ${45+p*15}%)`; }
+function renderPlan(){
+  const used=usedTeams(); const wks=WEEKS.filter(w=>w>=D.currentWeek-1);
+  const rows = [...POOL].sort((a,b)=>(SOL.assign[a.id]||usedWeek(a.id)||99)-(SOL.assign[b.id]||usedWeek(b.id)||99)||a.name.localeCompare(b.name));
+  function usedWeek(id){ for (const w in S.picks) if (S.picks[w].includes(id)) return +w; return null; }
+  const head = `<tr><th style="text-align:left">Team</th><th>Plan</th>${wks.map(w=>`<th class="${w===D.currentWeek?'now':''}">W${w}</th>`).join('')}</tr>`;
+  const body = rows.map(t=>{ const uw=usedWeek(t.id); const pw=SOL.assign[t.id];
+    return `<tr><td class="team"><img src="${t.logo}" alt="">${esc(t.name)}</td><td>${uw?`used W${uw}`:(pw?`W${pw}`:'—')}</td>`+
+      wks.map(w=>{ const a=assess(t,w);
+        if(!a.game) return `<td class="cell bye">bye</td>`;
+        if(!a.legal) return `<td class="cell x" title="${esc(a.reason)}">${esc(a.opp?a.opp.abbr:'?')}</td>`;
+        const tag = (a.home?'':(a.neutral?'n ':'@ '))+a.opp.abbr;
+        return `<td class="cell ${pw===w?'pick':''} ${uw===w?'used':''}" style="background:${heat(a.p)}" title="${esc(tag)} · ${fmtLine(a.margin)} (${a.src})">${a.result||pct(a.p)}<br><small style="font-weight:500">${esc(tag)}</small></td>`; }).join('')+`</tr>`; }).join('');
+  $('#view').innerHTML = `<div class="legend"><span><i style="background:${heat(.95)}"></i>near-certain</span><span><i style="background:${heat(.5)}"></i>coin flip</span><span><i style="background:repeating-linear-gradient(45deg,transparent 0 4px,rgba(245,227,27,.6) 4px 6px);border:1px solid var(--line)"></i>illegal (non-FBS)</span><span><i style="border:2px solid var(--amber)"></i>optimiser's plan</span><span><i style="border:2px solid var(--chalk)"></i>your pick</span> · rows sorted by planned week</div><div class="plan"><table>${head}${body}</table></div>`;
+}
+function renderTeam(){
+  const used=usedTeams(); const usedWeek=id=>{ for (const w in S.picks) if (S.picks[w].includes(id)) return +w; return null; };
+  const confs=[...new Set(POOL.map(t=>t.conf))].sort();
+  const comfortP = Phi(S.comfort/SIGMA);
+  // schedule ease score for the list: mean win chance across legal remaining games
+  const ease = t => { const ps=WEEKS.filter(w=>w>=D.currentWeek).map(w=>assess(t,w)).filter(a=>a.legal).map(a=>a.p); return ps.length? ps.reduce((x,y)=>x+y,0)/ps.length : 0; };
+  let list = POOL.slice();
+  if (S.tconf.size) list=list.filter(t=>S.tconf.has(t.conf));
+  if (S.tq){ const q=S.tq.toLowerCase(); list=list.filter(t=>(t.full+' '+t.abbr).toLowerCase().includes(q)); }
+  if (!S.team || !T[S.team]) S.team = (list[0]||POOL[0]).id;
+  const t = T[S.team];
+  const left = `<div class="tv-list">
+    <input type="search" id="tq" placeholder="Search team…" value="${esc(S.tq)}">
+    <div class="confs">${confs.map(c=>`<button class="chip ${S.tconf.has(c)?'on':''}" data-tconf="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+    ${list.map(x=>`<button class="t ${x.id===S.team?'on':''} ${used.has(x.id)?'used':''}" data-team="${x.id}"><img src="${x.logo}" alt="" onerror="this.onerror=null;this.src=this.src.replace('500-dark','500')">${esc(x.name)}<small>${used.has(x.id)?'used W'+usedWeek(x.id):pct(ease(x))+' avg'}</small></button>`).join('')}
+  </div>`;
+  // schedule rows
+  const allWeeks = WEEKS.filter(w=>S.tf.past || w>=D.currentWeek);
+  let rows = allWeeks.map(w=>({w,a:assess(t,w)}));
+  if (S.tf.illegal) rows=rows.filter(r=>r.a.legal);
+  if (S.tf.flips) rows=rows.filter(r=>r.a.p>=0.65);
+  if (S.tf.comfort) rows=rows.filter(r=>r.a.p>=comfortP);
+  if (S.tf.home) rows=rows.filter(r=>r.a.game&&r.a.home&&!r.a.neutral);
+  const legal=WEEKS.filter(w=>w>=D.currentWeek).map(w=>assess(t,w)).filter(a=>a.legal);
+  const bestW = WEEKS.filter(w=>w>=D.currentWeek).map(w=>({w,p:assess(t,w).p})).sort((x,y)=>y.p-x.p)[0];
+  const comfy = legal.filter(a=>a.p>=comfortP).length;
+  const uw=usedWeek(t.id), pw=SOL.assign[t.id];
+  const hero = `<div class="tv-hero" style="--team:${t.color}">
+    <img src="${t.logo}" alt="" onerror="this.onerror=null;this.src=this.src.replace('500-dark','500')">
+    <div><div class="name">${esc(t.full)}</div><div class="sub">${esc(t.conf)} · FPI #${t.fpiRank??'–'} (${t.fpi>0?'+':''}${t.fpi})${t.sagRank?` · Sagarin #${t.sagRank} (${t.sag})`:''}${t.ap?` · AP #${t.ap}`:''}${t.wins+t.losses?` · ${t.wins}–${t.losses}`:''} · ${uw?`<b style="color:var(--chalk)">used in week ${uw}</b>`:(pw?`<b style="color:var(--amber)">optimiser plans W${pw}</b>`:'no planned week')}</div></div>
+    <div class="stats"><div class="stat">Legal games<br><b>${legal.length}</b></div><div class="stat">Comfortable<br><b>${comfy}</b></div><div class="stat">Avg win chance<br><b>${pct(ease(t))}</b></div><div class="stat">Best week<br><b>${bestW&&bestW.p>0?'W'+bestW.w:'–'}</b></div></div>
+  </div>`;
+  const chips = `<div class="toolbar">
+    <button class="chip ${S.tf.illegal?'on':''}" data-tf="illegal">Hide illegal</button>
+    <button class="chip ${S.tf.flips?'on':''}" data-tf="flips">Hide coin-flips (&lt;65%)</button>
+    <button class="chip ${S.tf.comfort?'on':''}" data-tf="comfort">Comfortable only (≥${S.comfort} pts)</button>
+    <button class="chip ${S.tf.home?'on':''}" data-tf="home">Home games</button>
+    <button class="chip ${S.tf.past?'on':''}" data-tf="past">Show past weeks</button>
+    <span class="count">${rows.length} of ${allWeeks.length} weeks</span></div>`;
+  const sched = rows.length? rows.map(({w,a})=>{
+    const cls=[a.legal?'':'illegal', pw===w?'plan':'', uw===w?'used':''].join(' ');
+    if(!a.game) return `<div class="mu ${cls}"><div class="wk">W${w}<small>${D.weekDates[w]||''}</small></div><div></div><div class="opp" style="color:var(--chalk-dim)">Bye</div></div>`;
+    const venue = a.neutral?'neutral':(a.home?'home':'away');
+    const dt=new Date(a.game.date); const date = dt.toLocaleDateString('en-AU',{day:'numeric',month:'short'}); const kick = `${dt.toLocaleTimeString('en-AU',{timeZone:'Australia/Sydney',hour:'numeric',minute:'2-digit'})} NEW · ${dt.toLocaleTimeString('en-US',{timeZone:'America/Los_Angeles',hour:'numeric',minute:'2-digit'})} PDX`;
+    return `<div class="mu ${cls}">
+      <div class="wk">W${w}<small>${date}</small><small>${kick}</small></div>
+      <img src="${a.opp.logo}" alt="" onerror="this.onerror=null;this.src=this.src.replace('500-dark','500')">
+      <div class="opp">${esc(a.opp.name)}${a.opp.ap?` <span style="color:var(--chalk-dim);font-weight:500">#${a.opp.ap}</span>`:''}<small>${esc(a.opp.conf)}${a.opp.fpiRank?` · FPI #${a.opp.fpiRank}`:''}</small></div>
+      <div class="venue ${venue}">${venue}</div>
+      ${a.legal? `<div class="line">${fmtLine(a.margin)}<span class="src">${a.src||''}</span></div>
+        <div class="prob" style="--comfort:${comfortP*100}%"><div class="track"><i class="${cls_(a.p)}" style="width:${a.p*100}%"></i></div><span class="pct">${a.result?`<span class="res ${a.result}">${a.result}</span>`:pct(a.p)}</span></div>`
+        : `<div class="flag">${esc(a.reason)}</div>`}
+      <div class="note">${uw===w?'your pick':(pw===w?'★ planned':'')}</div>
+    </div>`; }).join('') : `<div class="empty"><h3>No games match</h3>Loosen the filters.</div>`;
+  function cls_(p){ return cls(p,S.comfort); }
+  $('#view').innerHTML = `<div class="tv">${left}<div>${hero}${chips}<div class="tv-sched">${sched}</div></div></div>`;
+  $('#tq').oninput=e=>{S.tq=e.target.value; save(); renderTeam();};
+  $('#view').querySelectorAll('[data-tconf]').forEach(b=>b.onclick=()=>{ const c=b.dataset.tconf; S.tconf.has(c)?S.tconf.delete(c):S.tconf.add(c); save(); renderTeam(); });
+  $('#view').querySelectorAll('[data-team]').forEach(b=>b.onclick=()=>{S.team=b.dataset.team; save(); renderTeam();});
+  $('#view').querySelectorAll('[data-tf]').forEach(b=>b.onclick=()=>{S.tf[b.dataset.tf]=!S.tf[b.dataset.tf]; save(); renderTeam();});
+}
+function renderRivals(){
+  if (!D.picks){ $('#view').innerHTML = `<div class="empty"><h3>No comp data</h3>Drop the comp spreadsheet next to fetch_data.py (or pass --picks file.xlsx) and re-run it.</div>`; return; }
+  const LOGO = (t,c='') => `<img class="${c}" src="${t.logo}" alt="" title="${esc(t.name)}" onerror="this.onerror=null;this.src=this.src.replace('500-dark','500')">`;
+  const weeksDone = WEEKS.filter(w=>w<D.currentWeek);
+  const rows = D.picks.players.map(p=>{
+    const lost = livesLostFor(p.picks); const used=usedTeams(p.picks);
+    const sol = lost>=LIVES ? null : solve(D.currentWeek, new Set(), {}, p.picks);
+    let exp=0; if (sol) for (const id in sol.assign) exp += 1-assess(T[id],sol.assign[id]).p;
+    const remaining = POOL.filter(t=>!used.has(t.id)); const strength = remaining.length? remaining.reduce((s,t)=>s+(t.fpi??0),0)/remaining.length : 0;
+    return {p, lost, used, exp, strength, out: lost>=LIVES};
+  }).sort((a,b)=>a.lost-b.lost || a.exp-b.exp);
+  const head = `<tr><th style="text-align:left">Player</th><th>Lives</th><th>Teams left</th><th>Outlook<br><small>exp. lives lost</small></th><th>Avg FPI left</th>${WEEKS.map(w=>`<th class="${w===D.currentWeek?'now':''}">W${w}</th>`).join('')}</tr>`;
+  const body = rows.map(({p,lost,used,exp,strength,out},i)=>`<tr class="${p.name===D.picks.me?'me':''} ${out?'out':''}">
+    <td class="player">${i+1}. ${esc(p.name)}${p.name===D.picks.me?' (you)':''}</td>
+    <td><span class="balls">${[...Array(LIVES).keys()].map(k=>`<i class="${k<lost?'lost':''}"></i>`).join('')}</span></td>
+    <td class="num">${POOL.length-used.size}</td>
+    <td class="num">${out?'—':exp.toFixed(1)}</td>
+    <td class="num">${strength>0?'+':''}${strength.toFixed(1)}</td>
+    ${WEEKS.map(w=>`<td><span class="pk">${(p.picks[w]||[]).map(id=>LOGO(T[id], pickOutcome(id,w)||'')).join('')}</span></td>`).join('')}
+  </tr>`).join('');
+  const cw = D.picks.players.some(p=>p.picks[S.view]) ? S.view : weeksDone[weeksDone.length-1];
+  const counts = {}; if (cw) for (const p of D.picks.players) for (const id of (p.picks[cw]||[])) counts[id]=(counts[id]||0)+1;
+  const crowd = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([id,n])=>{ const o=pickOutcome(id,cw)||''; return `<span class="${o}">${LOGO(T[id])}${esc(T[id].name)} <small>×${n}</small></span>`; }).join('');
+  $('#view').innerHTML = `<div class="standings"><table>${head}${body}</table></div>
+    <div class="legend"><span><i style="border:2px solid var(--good)"></i>won</span><span><i style="border:2px solid var(--bad)"></i>lost a life</span><span><i style="border:2px solid var(--flag)"></i>illegal pick (FCS / bye)</span><span>Outlook = expected lives lost from here if they pick optimally with what they have left</span></div>
+    ${cw?`<div class="panel" style="margin-top:14px"><h2>The crowd <span>week ${cw}</span></h2><div class="crowd">${crowd||'—'}</div></div>`:''}`;
+}
+function render(){ recompute(); renderHeader(); renderSlots(); ({plan:renderPlan, team:renderTeam, rivals:renderRivals}[S.tab]||renderWeek)(); }
+
+// knobs
+for (const [id,key,out] of [['horizon','horizon','horizonOut'],['drift','drift','driftOut'],['hfa','hfa','hfaOut'],['comfort','comfort','comfortOut']])
+  $('#'+id).oninput=e=>{ S[key]=+e.target.value; $('#'+out).value=S[key]; save(); render(); };
+$('#ratings').onchange=e=>{S.ratings=e.target.value; save(); render();};
+$('#obj').onchange=e=>{S.obj=e.target.value; save(); render();};
+// ---------- comp spreadsheet (client-side) ----------
+const norm = x => String(x).toLowerCase().replace(/state/g,'st').replace(/&/g,'and').replace(/[^a-z]/g,'');
+function parseSheet(buf){
+  const wb = XLSX.read(buf, {type:'array'}); const ws = wb.Sheets['Table'] || wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true});
+  const byName = {}; for (const t of POOL) for (const k of [t.name, t.full, t.full.replace(' '+t.mascot,''), t.abbr]) byName[norm(k)] ??= t.id;
+  const ALIAS = {Pitt:'Pittsburgh'};
+  const header = rows[0]||[]; const cols = {}; for (let c=2;c<=16;c++) if (header[c]) cols[c]=String(header[c]).trim();
+  const players = {}; for (const n of Object.values(cols)) players[n]={};
+  const unmatched=[];
+  for (let r=3;r<rows.length;r++){ const tname=rows[r]?.[1]; if (typeof tname!=='string') continue;
+    const tid = byName[norm(ALIAS[tname]||tname)]; if(!tid){ unmatched.push(tname); continue; }
+    for (const c in cols){ const v=rows[r][c]; const w=parseInt(v); if (v!=null && v!=='' && !isNaN(w)) (players[cols[c]][w] ??= []).push(tid); } }
+  if (unmatched.length) console.warn('unmatched teams in sheet:', unmatched);
+  return { me: D.picks?.me || 'B Spak', players: Object.entries(players).map(([n,p])=>({name:n, picks:p})) };
+}
+$('#sheetFile').onchange = async e => { const f=e.target.files[0]; if(!f) return;
+  try { const picks = parseSheet(await f.arrayBuffer()); S.sheet = {picks, name:f.name, loadedAt:new Date().toISOString()}; save(); location.reload(); }
+  catch(err){ alert('Could not read that spreadsheet: '+err.message); } };
+$('#sheetClear').onclick = () => { S.sheet=null; save(); location.reload(); };
+$('#ntfy').onchange = e => { S.ntfy = e.target.value.trim(); save(); renderHeader(); };
+$('#ntfyTest').onclick = async () => { if(!S.ntfy) return alert('Enter a topic first.');
+  try { await fetch('https://ntfy.sh/'+encodeURIComponent(S.ntfy), {method:'POST', body:'Ten Lives is talking to you. 🏈', headers:{Title:'Test ping', Tags:'football'}}); $('#ntfyLink').innerHTML += ' <b style="color:var(--good)">Sent!</b>'; }
+  catch(err){ alert('Ping failed: '+err.message); } };
+
+// ---------- live refresh from ESPN (lines, scores, FPI) ----------
+async function liveRefresh(){
+  const el=$('#live'); if(!el) return;
+  if (location.protocol==='file:') { el.textContent='Live refresh works when hosted (not from a local file).'; return; }
+  el.textContent='Refreshing lines and scores from ESPN…';
+  try {
+    const byId = Object.fromEntries(D.games.map(g=>[g.id,g]));
+    const wks = [D.currentWeek, D.currentWeek+1].filter(w=>w>=1 && w<=15);
+    const sb = await Promise.all(wks.map(w=>fetch(`https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=400&week=${w}&seasontype=2&dates=${D.season}`).then(r=>r.json())));
+    let n=0;
+    for (const d of sb) for (const ev of d.events||[]){ const g=byId[ev.id]; if(!g) continue; const c=ev.competitions[0];
+      const home=c.competitors.find(x=>x.homeAway==='home'), away=c.competitors.find(x=>x.homeAway==='away');
+      if (c.odds?.[0]?.spread!=null) g.spread=c.odds[0].spread;
+      const done=!!ev.status?.type?.completed; g.completed=done; if(done){ g.homeScore=+home.score; g.awayScore=+away.score; } n++; }
+    const f = await fetch(`https://site.web.api.espn.com/apis/fitt/v3/sports/football/college-football/powerindex?region=us&lang=en&limit=200`).then(r=>r.json());
+    const names=f.categories[0].names, rnames=f.categories[1]?.names||[];
+    for (const row of f.teams){ const t=T[row.team.id]; if(!t) continue; const cat=Object.fromEntries(row.categories.map(c=>[c.name,c]));
+      if (cat.fpi){ const v=Object.fromEntries(names.map((k,i)=>[k,cat.fpi.values[i]])); t.fpi=+v.fpi.toFixed(2); t.fpiRank=v.fpirank; t.wins=v.numwins; t.losses=v.numlosses; }
+      if (cat.resume){ const v=Object.fromEntries(rnames.map((k,i)=>[k,cat.resume.values[i]])); t.ap = v['APRank/CFPRank']||null; } }
+    const nextW = WEEKS.find(w=>D.games.some(g=>g.week===w && !g.completed)); if (nextW && nextW!==D.currentWeek){ D.currentWeek=nextW; if (S.view<nextW) S.view=nextW; }
+    el.innerHTML = `<b style="color:var(--good)">Live</b> · ${n} games refreshed from ESPN at ${new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})} (Sagarin and picks update via GitHub twice daily).`;
+    render();
+  } catch(err){ el.textContent='Live refresh failed ('+err.message+') — showing the last published data.'; }
+}
+$('#reset').onclick=()=>{ if(confirm('Clear every pick and life adjustment?')){ S.picks={}; S.livesAdj=0; save(); render(); } };
+render();
+liveRefresh();
+})();
+</script>
+</body>
+</html>
