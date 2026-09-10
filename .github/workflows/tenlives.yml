@@ -32,8 +32,9 @@ jobs:
         run: python kickoff.py
       - name: Commit
         run: |
-          git config user.name "ten-lives-bot"
-          git config user.email "bot@users.noreply.github.com"
+          git config user.name ten-lives-bot
+          git config user.email bot@users.noreply.github.com
           git add -A
-          git diff --cached --quiet || (git commit -m "bot: $(date -u +'%Y-%m-%d %H:%M UTC')" && git push)                    git add -A
-          git diff --cached --quiet || (git commit -m "bot: $(date -u +'%Y-%m-%d %H:%M UTC')" && git push)
+          git diff --cached --quiet && exit 0
+          git commit -m bot-update
+          git push
