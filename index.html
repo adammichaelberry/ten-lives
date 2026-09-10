@@ -47,7 +47,7 @@ header{position:sticky;top:0;z-index:20;background:var(--ink);border-bottom:3px 
 
 /* ---------- layout ---------- */
 main{max-width:1500px;margin:0 auto;padding:18px 22px 80px;display:grid;grid-template-columns:330px 1fr;gap:22px}
-@media (max-width:980px){main{grid-template-columns:1fr}}
+@media (max-width:980px){main{grid-template-columns:1fr}aside{position:static}}
 aside{position:sticky;top:96px;align-self:start;display:flex;flex-direction:column;gap:14px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;backdrop-filter:blur(4px)}
 .panel h2{font-family:var(--display);font-size:22px;letter-spacing:.05em;margin:0 0 8px;color:var(--amber)}
