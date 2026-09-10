@@ -10,7 +10,7 @@
 :root{
   --turf:#143826; --turf-deep:#0E2A1C; --chalk:#F3F1E6; --chalk-dim:#B7C2B5;
   --amber:#FFB020; --flag:#F5E31B; --good:#4BE39B; --bad:#FF5F5F; --ink:#0A1A12;
-  --panel:rgba(10,26,18,.92); --line:rgba(243,241,230,.14);
+  --panel:rgba(10,26,18,.55); --line:rgba(243,241,230,.14);
   --display:'Bebas Neue',Impact,sans-serif; --body:'Barlow',system-ui,sans-serif; --cond:'Barlow Condensed',var(--body);
 }
 *{box-sizing:border-box}
@@ -47,9 +47,38 @@ header{position:sticky;top:0;z-index:20;background:var(--ink);border-bottom:3px 
 
 /* ---------- layout ---------- */
 main{max-width:1500px;margin:0 auto;padding:18px 22px 80px;display:grid;grid-template-columns:330px 1fr;gap:22px}
-@media (max-width:980px){main{grid-template-columns:1fr}aside{position:static}}
+@media (max-width:980px){
+  main{grid-template-columns:1fr;padding:12px 12px 60px;gap:14px}
+  aside{position:static;order:2}
+  #view{order:1}
+  header{position:static}
+  .bar{padding:8px 12px;gap:8px 14px}
+  .stat{display:flex;align-items:baseline;gap:6px}
+  .stat br{display:none}
+  .brand{font-size:28px}
+  .stat b{font-size:22px}
+  .weeksel{order:5;width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
+  .weeksel button{flex:0 0 auto}
+  .tabs{order:4}
+  .grid{grid-template-columns:1fr}
+  .toolbar{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}
+  .toolbar .chip,.toolbar input,.toolbar select{flex:0 0 auto}
+  .count{margin-left:8px}
+  .card{grid-template-columns:52px 1fr;gap:10px}
+  .card img{width:52px;height:52px}
+  .card .name{font-size:22px}
+  .lives .ball{width:20px;height:20px}
+}
+.panel details summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between}
+.panel details summary::-webkit-details-marker{display:none}
+.panel details summary::after{content:"+";font-family:var(--display);font-size:22px;color:var(--chalk-dim)}
+.panel details[open] summary::after{content:"–"}
+.panel details summary h2{margin:0}
+.panel details[open] summary h2{margin-bottom:8px}
+.only-mobile{display:none;text-decoration:none}
+@media (max-width:980px){.only-mobile{display:inline-flex;align-items:center}}
 aside{position:sticky;top:96px;align-self:start;display:flex;flex-direction:column;gap:14px}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;backdrop-filter:blur(4px)}
 .panel h2{font-family:var(--display);font-size:22px;letter-spacing:.05em;margin:0 0 8px;color:var(--amber)}
 .panel h2 span{color:var(--chalk-dim);font-size:16px;margin-left:8px}
 .slot{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px dashed var(--line)}
@@ -174,24 +203,6 @@ aside{position:sticky;top:96px;align-self:start;display:flex;flex-direction:colu
 .mu .flag{margin:0;grid-column:span 3;justify-self:start}
 .mu .note{font-family:var(--cond);font-size:12px;color:var(--amber);text-align:right;grid-column:1/-1;margin-top:-4px}
 @media (max-width:760px){.mu{grid-template-columns:52px 36px 1fr 70px;row-gap:4px}.mu .prob,.mu .flag{grid-column:1/-1}.mu .line{grid-column:span 2}}
-/* ---------- comp sheet loader ---------- */
-.sheet{margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:10px;background:rgba(0,0,0,.18)}
-.sheet .title{font-family:var(--cond);font-weight:700;font-size:15px;color:var(--chalk);letter-spacing:.04em;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.sheet .status{font-size:12px;color:var(--chalk-dim);margin:4px 0 8px;line-height:1.35}
-.sheet .status b{color:var(--chalk)}
-.sheet .status.ok{color:var(--good)} .sheet .status.err{color:var(--bad)}
-.drop{border:2px dashed var(--line);border-radius:10px;padding:14px 10px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;font-size:13px;color:var(--chalk-dim)}
-.drop:hover,.drop:focus-visible{border-color:var(--amber);color:var(--chalk)}
-.drop.over{border-color:var(--good);background:rgba(75,227,155,.08);color:var(--chalk)}
-.drop b{display:block;font-family:var(--cond);font-size:16px;color:var(--chalk);margin-bottom:2px}
-.or{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--chalk-dim)}
-.or::before,.or::after{content:"";flex:1;border-top:1px solid var(--line)}
-.urlrow{display:flex;gap:6px}
-.urlrow input{flex:1;min-width:0;background:var(--ink);border:1px solid var(--line);color:var(--chalk);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:13px}
-.urlrow input:focus{border-color:var(--amber);outline:0}
-.chip.busy{opacity:.6;pointer-events:none}
-.sheet .foot{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-
 /* ---------- rivals ---------- */
 .standings{overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel);margin-bottom:14px}
 .standings table{border-collapse:collapse;font-family:var(--cond);font-size:14px;width:100%}
@@ -235,8 +246,7 @@ footer{max-width:1500px;margin:0 auto;padding:0 22px 30px;font-size:12px;color:v
     <div id="slots"></div>
     <div class="hint" id="slotHint"></div>
   </div>
-  <div class="panel">
-    <h2>Model</h2>
+  <div class="panel"><details class="fold"><summary><h2>Model</h2></summary>
     <div class="knob"><label>Ratings</label><select id="ratings"><option value="blend">FPI + Sagarin</option><option value="fpi">FPI only</option><option value="sag">Sagarin only</option></select></div>
     <div class="knob"><label>Objective</label><select id="obj"><option value="lin">Fewest lives lost</option><option value="log">Survive longest</option></select></div>
     <div class="knob"><label>Plan through week</label><span><input type="range" id="horizon" min="1" max="13" step="1" value="13"><output id="horizonOut">15</output></span></div>
@@ -244,33 +254,22 @@ footer{max-width:1500px;margin:0 auto;padding:0 22px 30px;font-size:12px;color:v
     <div class="knob"><label>Home advantage</label><span><input type="range" id="hfa" min="0" max="5" step="0.5" value="2.5"><output id="hfaOut">2.5</output></span></div>
     <div class="knob"><label>“Comfortable” at</label><span><input type="range" id="comfort" min="7" max="35" step="1" value="21"><output id="comfortOut">21</output></span></div>
     <div class="hint">This week uses DraftKings lines where posted, otherwise the ratings. Future weeks project a spread from ESPN FPI and Sagarin (averaged) plus home advantage, with widening uncertainty per week ahead. Recommendations solve every week up to the horizon at once — each team is placed in its best legal week. If your comp usually ends by week 9, plan through week 9: the optimiser will then spend your best teams sooner.</div>
-  </div>
-  <div class="panel">
-    <h2>Data</h2>
+  </details></div>
+  <div class="panel"><details class="fold"><summary><h2>Data</h2></summary>
     <div class="hint" id="meta"></div>
     <div class="hint" id="live"></div>
-    <div class="sheet" id="sheet">
-      <div class="title">Comp spreadsheet <span id="sheetBadge" class="chip" style="font-size:11px;padding:2px 8px"></span></div>
-      <div class="status" id="sheetStatus"></div>
-      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Load the comp spreadsheet from a file">
-        <b>Drop the .xlsx here</b>or tap to choose a file
-        <input type="file" id="sheetFile" accept=".xlsx,.xls,.csv" style="display:none">
-      </div>
-      <div class="or">or link to it</div>
-      <div class="urlrow"><input type="url" id="sheetUrl" placeholder="Google Sheets / OneDrive / direct .xlsx link" autocomplete="off" spellcheck="false"><button class="chip" id="sheetFetch">Fetch</button></div>
-      <div class="status" id="sheetUrlHint"></div>
-      <div class="foot">
-        <button class="chip" id="sheetClear" style="display:none">Use published copy</button>
-        <button class="chip" id="reset">Clear my app picks</button>
-      </div>
+    <div class="hint" style="margin-top:10px"><b style="color:var(--chalk)">Comp spreadsheet</b><br><span id="sheetStatus"></span></div>
+    <div class="hint" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+      <label class="chip" style="cursor:pointer">Load .xlsx<input type="file" id="sheetFile" accept=".xlsx" style="display:none"></label>
+      <button class="chip" id="sheetClear" style="display:none">Use published copy</button>
+      <button class="chip" id="reset">Clear my app picks</button>
     </div>
-  </div>
-  <div class="panel">
-    <h2>Alerts</h2>
+  </details></div>
+  <div class="panel"><details class="fold"><summary><h2>Alerts</h2></summary>
     <div class="hint">Line-movement and kick-off pings go to an <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy.sh</a> topic. Install the ntfy app, subscribe to the topic, and paste it here to test.</div>
     <div class="hint" style="display:flex;gap:6px;margin-top:6px"><input type="text" id="ntfy" placeholder="your-secret-topic" style="flex:1;background:var(--ink);border:1px solid var(--line);color:var(--chalk);border-radius:8px;padding:6px 10px;font-family:inherit"><button class="chip" id="ntfyTest">Test</button></div>
     <div class="hint" id="ntfyLink"></div>
-  </div>
+  </details></div>
 </aside>
 
 <section id="view"></section>
@@ -293,7 +292,7 @@ const TOTAL_PICKS = () => WEEKS.reduce((n,w)=>n+cap(w),0);
 // ---------- state ----------
 const LS = 'tenlives-2026';
 let S = { picks:{}, livesAdj:0, view:D.currentWeek, tab:'week', conf:new Set(), q:'', hideUsed:true, legalOnly:false, homeOnly:false, team:null, tq:'', tconf:new Set(), tf:{illegal:true, flips:false, comfort:false, home:false, past:false}, sort:'p',
-          obj:'lin', ratings:'blend', drift:2.5, hfa:2.4, comfort:21, horizon:13, sheet:null, sheetUrl:'', ntfy:'' };
+          obj:'lin', ratings:'blend', drift:2.5, hfa:2.4, comfort:21, horizon:13, sheet:null, ntfy:'' };
 try { Object.assign(S, JSON.parse(localStorage.getItem(LS)||'{}')); S.conf = new Set(S.conf||[]); S.tconf = new Set(S.tconf||[]); S.tf = {illegal:true,flips:false,comfort:false,home:false,past:false,...(S.tf||{})}; } catch(e){}
 if (S.sheet && S.sheet.picks && (!D.picks || S.sheet.loadedAt > D.fetched)) D.picks = {...S.sheet.picks, source:'local'};
 const ME = D.picks?.players.find(p=>p.name===D.picks.me);
@@ -390,7 +389,8 @@ function renderHeader(){
   $('#wkTitle').textContent = `${S.view} · ${D.weekDates[S.view]||''}`;
   $('#meta').innerHTML = `Fetched ${esc(D.fetched.replace('T',' '))}. Current week ${D.currentWeek}. ${POOL.length} pool teams across ${WEEKS.length} weeks — ${TOTAL_PICKS()} picks needed (6 in weeks 1–3, then 5).`;
   $('#obj').value=S.obj; $('#ratings').value=S.ratings;
-  renderSheet();
+  $('#sheetStatus').innerHTML = D.picks ? (D.picks.source==='local' ? `Using <b>${esc(S.sheet.name)}</b> loaded ${esc(S.sheet.loadedAt.replace('T',' ').slice(0,16))} · ${D.picks.players.length} players` : `Published copy from ${esc(D.fetched.replace('T',' '))} · ${D.picks.players.length} players`) : 'No comp picks loaded.';
+  $('#sheetClear').style.display = S.sheet ? '' : 'none';
   $('#ntfy').value = S.ntfy; $('#ntfyLink').innerHTML = S.ntfy ? `Subscribe: <a href="https://ntfy.sh/${encodeURIComponent(S.ntfy)}" target="_blank" rel="noopener">ntfy.sh/${esc(S.ntfy)}</a> — set the same name as the <code>NTFY_TOPIC</code> secret in GitHub.` : ''; $('#horizon').value=S.horizon; $('#horizonOut').value=S.horizon; $('#drift').value=S.drift; $('#driftOut').value=S.drift; $('#hfa').value=S.hfa; $('#hfaOut').value=S.hfa; $('#comfort').value=S.comfort; $('#comfortOut').value=S.comfort;
 }
 function renderSlots(){
@@ -426,7 +426,7 @@ function renderWeek(){
     <button class="chip ${S.homeOnly?'on':''}" id="fHome">Home games</button>
     <input type="search" id="q" placeholder="Search team…" value="${esc(S.q)}">
     <select id="sort"><option value="p">Sort: win chance</option><option value="cost">Sort: cheapest to use now</option><option value="fpi">Sort: FPI rank</option><option value="plan">Sort: planned week</option><option value="name">Sort: name</option></select>
-    <span class="count">${list.length} teams</span></div>`;
+    <span class="count">${list.length} teams</span><a class="chip only-mobile" href="#slots">My picks ↓</a></div>`;
   const cards = list.map(({t,a,used,usedWk})=>{
     const rec = SOL.assign[t.id]===S.view && !used;
     const alts = WEEKS.filter(w=>w>=D.currentWeek && w!==S.view).map(w=>({w,a:assess(t,w)})).filter(x=>x.a.legal).sort((x,y)=>y.a.p-x.a.p).slice(0,3);
@@ -587,74 +587,9 @@ function parseSheet(buf){
   if (unmatched.length) console.warn('unmatched teams in sheet:', unmatched);
   return { me: D.picks?.me || 'B Spak', players: Object.entries(players).map(([n,p])=>({name:n, picks:p})) };
 }
-// ---- sheet loader UI ----
-const fmtWhen = iso => iso ? iso.replace('T',' ').slice(0,16) : '';
-function renderSheet(){
-  const st=$('#sheetStatus'), badge=$('#sheetBadge');
-  if (D.picks && D.picks.source==='local'){
-    badge.textContent = S.sheet.via==='url' ? 'linked' : 'uploaded'; badge.style.display='';
-    st.className='status'; st.innerHTML = `Using <b>${esc(S.sheet.name)}</b> · ${D.picks.players.length} players · loaded ${esc(fmtWhen(S.sheet.loadedAt))}`;
-  } else if (D.picks){
-    badge.textContent='published'; badge.style.display='';
-    st.className='status'; st.innerHTML = `Published copy from ${esc(fmtWhen(D.fetched))} · ${D.picks.players.length} players`;
-  } else { badge.style.display='none'; st.className='status'; st.textContent='No comp picks loaded yet — add the spreadsheet below to see everyone\'s picks in Rivals.'; }
-  $('#sheetClear').style.display = S.sheet ? '' : 'none';
-  $('#sheetUrl').value = S.sheetUrl || '';
-  $('#sheetFetch').textContent = S.sheetUrl && S.sheet?.via==='url' ? 'Refresh' : 'Fetch';
-}
-function setUrlHint(msg, cls){ const h=$('#sheetUrlHint'); h.className='status '+(cls||''); h.innerHTML=msg||''; }
-function applySheet(buf, name, via){
-  const picks = parseSheet(buf);
-  if (!picks.players.length) throw new Error('no player columns found — is this the comp sheet?');
-  S.sheet = {picks, name, via, loadedAt:new Date().toISOString()}; save(); location.reload();
-}
-async function loadSheetFile(f){
-  if(!f) return;
-  try { applySheet(await f.arrayBuffer(), f.name, 'file'); }
-  catch(err){ setUrlHint('Could not read that spreadsheet: '+esc(err.message), 'err'); }
-}
-// Turn a share link into something fetchable from the browser.
-function toDownloadUrl(u){
-  u = u.trim(); if(!u) return null;
-  let m;
-  if ((m = u.match(/docs\.google\.com\/spreadsheets\/d\/(?:e\/)?([A-Za-z0-9_-]+)/))){
-    if (/\/pub/.test(u)) return u.replace(/\/pub.*$/, '/pub?output=xlsx');           // published-to-web link
-    return `https://docs.google.com/spreadsheets/d/${m[1]}/export?format=xlsx`;      // plain share link
-  }
-  if (/1drv\.ms|onedrive\.live\.com|sharepoint\.com/.test(u)){                       // OneDrive share link
-    const b = btoa(u).replace(/=+$/,'').replace(/\//g,'_').replace(/\+/g,'-');
-    return `https://api.onedrive.com/v1.0/shares/u!${b}/root/content`;
-  }
-  if ((m = u.match(/dropbox\.com/))) return u.replace(/[?&]dl=0/, '').replace(/[?&]raw=1/, '') + (u.includes('?')?'&':'?') + 'raw=1';
-  return u;
-}
-async function fetchSheet(){
-  const raw = $('#sheetUrl').value.trim(); if(!raw) return setUrlHint('Paste a link first.', 'err');
-  const url = toDownloadUrl(raw); const btn=$('#sheetFetch'); btn.classList.add('busy'); setUrlHint('Fetching…');
-  try {
-    const r = await fetch(url, {mode:'cors', credentials:'omit'});
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const buf = await r.arrayBuffer();
-    S.sheetUrl = raw; save();
-    applySheet(buf, raw.replace(/^https?:\/\//,'').split('/')[0], 'url');
-  } catch(err){
-    btn.classList.remove('busy');
-    const gs = /docs\.google\.com/.test(raw);
-    setUrlHint(`Couldn't fetch that link (${esc(err.message)}). ` + (gs
-      ? 'For Google Sheets, use <b>File → Share → Publish to web</b>, choose the Table sheet as <b>.xlsx</b>, and paste that link — plain share links block browser downloads.'
-      : 'The host may block cross-site downloads. Try the file drop above, or set the <code>SHEET_URL</code> secret in GitHub so the nightly refresh pulls it instead.'), 'err');
-  }
-}
-const drop=$('#drop');
-drop.onclick = () => $('#sheetFile').click();
-drop.onkeydown = e => { if (e.key==='Enter'||e.key===' '){ e.preventDefault(); $('#sheetFile').click(); } };
-['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault(); drop.classList.add('over');}));
-['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault(); drop.classList.remove('over');}));
-drop.addEventListener('drop', e => loadSheetFile(e.dataTransfer.files[0]));
-$('#sheetFile').onchange = e => loadSheetFile(e.target.files[0]);
-$('#sheetFetch').onclick = fetchSheet;
-$('#sheetUrl').onkeydown = e => { if (e.key==='Enter') fetchSheet(); };
-$('#sheetUrl').onchange = e => { S.sheetUrl = e.target.value.trim(); save(); };
+$('#sheetFile').onchange = async e => { const f=e.target.files[0]; if(!f) return;
+  try { const picks = parseSheet(await f.arrayBuffer()); S.sheet = {picks, name:f.name, loadedAt:new Date().toISOString()}; save(); location.reload(); }
+  catch(err){ alert('Could not read that spreadsheet: '+err.message); } };
 $('#sheetClear').onclick = () => { S.sheet=null; save(); location.reload(); };
 $('#ntfy').onchange = e => { S.ntfy = e.target.value.trim(); save(); renderHeader(); };
 $('#ntfyTest').onclick = async () => { if(!S.ntfy) return alert('Enter a topic first.');
@@ -686,6 +621,7 @@ async function liveRefresh(){
   } catch(err){ el.textContent='Live refresh failed ('+err.message+') — showing the last published data.'; }
 }
 $('#reset').onclick=()=>{ if(confirm('Clear every pick and life adjustment?')){ S.picks={}; S.livesAdj=0; save(); render(); } };
+if (window.innerWidth>980) document.querySelectorAll('details.fold').forEach(d=>d.open=true);
 render();
 liveRefresh();
 })();
