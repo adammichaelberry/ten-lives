@@ -36,7 +36,7 @@ DEFAULT_PICKS = 5
 ME = "B Spak"                         # my column in the comp spreadsheet
 PICKS_XLSX = "Power_4_Survivor_2026.xlsx"
 SHEET_URL = os.environ.get("SHEET_URL", "").strip()
-NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "").strip()
+NTFY_TOPIC = (os.environ.get("NTFY_TOPIC", "").strip() or "tenlives-k7q2m9")
 MOVE_ALERT = float(os.environ.get("MOVE_ALERT", "3") or 3)
 COMFORT = 21
 

@@ -14,7 +14,7 @@ import requests
 from zoneinfo import ZoneInfo
 
 HERE = pathlib.Path(__file__).parent
-TOPIC = os.environ.get("NTFY_TOPIC", "").strip()
+TOPIC = (os.environ.get("NTFY_TOPIC", "").strip() or "tenlives-k7q2m9")
 LOOKAHEAD = int(os.environ.get("LOOKAHEAD_MIN", "45") or 45)
 QUIET = os.environ.get("QUIET_HOURS", "").strip()
 SYD = ZoneInfo("Australia/Sydney"); PDX = ZoneInfo("America/Los_Angeles")

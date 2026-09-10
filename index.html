@@ -266,9 +266,8 @@ footer{max-width:1500px;margin:0 auto;padding:0 22px 30px;font-size:12px;color:v
     </div>
   </details></div>
   <div class="panel"><details class="fold"><summary><h2>Alerts</h2></summary>
-    <div class="hint">Line-movement and kick-off pings go to an <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy.sh</a> topic. Install the ntfy app, subscribe to the topic, and paste it here to test.</div>
-    <div class="hint" style="display:flex;gap:6px;margin-top:6px"><input type="text" id="ntfy" placeholder="your-secret-topic" style="flex:1;background:var(--ink);border:1px solid var(--line);color:var(--chalk);border-radius:8px;padding:6px 10px;font-family:inherit"><button class="chip" id="ntfyTest">Test</button></div>
-    <div class="hint" id="ntfyLink"></div>
+    <div class="hint">Line-movement and kick-off pings go to the <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy</a> topic <b style="color:var(--chalk)">tenlives-k7q2m9</b>. Install the ntfy app, tap +, subscribe to that topic. Done.</div>
+    <div class="hint" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><a class="chip" style="text-decoration:none" href="https://ntfy.sh/tenlives-k7q2m9" target="_blank" rel="noopener">Open topic</a><button class="chip" id="ntfyTest">Send test ping</button><span id="ntfyLink"></span></div>
   </details></div>
 </aside>
 
@@ -292,7 +291,8 @@ const TOTAL_PICKS = () => WEEKS.reduce((n,w)=>n+cap(w),0);
 // ---------- state ----------
 const LS = 'tenlives-2026';
 let S = { picks:{}, livesAdj:0, view:D.currentWeek, tab:'week', conf:new Set(), q:'', hideUsed:true, legalOnly:false, homeOnly:false, team:null, tq:'', tconf:new Set(), tf:{illegal:true, flips:false, comfort:false, home:false, past:false}, sort:'p',
-          obj:'lin', ratings:'blend', drift:2.5, hfa:2.4, comfort:21, horizon:13, sheet:null, ntfy:'' };
+          obj:'lin', ratings:'blend', drift:2.5, hfa:2.4, comfort:21, horizon:13, sheet:null };
+const NTFY = 'tenlives-k7q2m9';
 try { Object.assign(S, JSON.parse(localStorage.getItem(LS)||'{}')); S.conf = new Set(S.conf||[]); S.tconf = new Set(S.tconf||[]); S.tf = {illegal:true,flips:false,comfort:false,home:false,past:false,...(S.tf||{})}; } catch(e){}
 if (S.sheet && S.sheet.picks && (!D.picks || S.sheet.loadedAt > D.fetched)) D.picks = {...S.sheet.picks, source:'local'};
 const ME = D.picks?.players.find(p=>p.name===D.picks.me);
@@ -391,7 +391,7 @@ function renderHeader(){
   $('#obj').value=S.obj; $('#ratings').value=S.ratings;
   $('#sheetStatus').innerHTML = D.picks ? (D.picks.source==='local' ? `Using <b>${esc(S.sheet.name)}</b> loaded ${esc(S.sheet.loadedAt.replace('T',' ').slice(0,16))} · ${D.picks.players.length} players` : `Published copy from ${esc(D.fetched.replace('T',' '))} · ${D.picks.players.length} players`) : 'No comp picks loaded.';
   $('#sheetClear').style.display = S.sheet ? '' : 'none';
-  $('#ntfy').value = S.ntfy; $('#ntfyLink').innerHTML = S.ntfy ? `Subscribe: <a href="https://ntfy.sh/${encodeURIComponent(S.ntfy)}" target="_blank" rel="noopener">ntfy.sh/${esc(S.ntfy)}</a> — set the same name as the <code>NTFY_TOPIC</code> secret in GitHub.` : ''; $('#horizon').value=S.horizon; $('#horizonOut').value=S.horizon; $('#drift').value=S.drift; $('#driftOut').value=S.drift; $('#hfa').value=S.hfa; $('#hfaOut').value=S.hfa; $('#comfort').value=S.comfort; $('#comfortOut').value=S.comfort;
+ $('#horizon').value=S.horizon; $('#horizonOut').value=S.horizon; $('#drift').value=S.drift; $('#driftOut').value=S.drift; $('#hfa').value=S.hfa; $('#hfaOut').value=S.hfa; $('#comfort').value=S.comfort; $('#comfortOut').value=S.comfort;
 }
 function renderSlots(){
   const picks = S.picks[S.view]||[]; const rec = recFor(S.view); const rows=[];
@@ -591,9 +591,8 @@ $('#sheetFile').onchange = async e => { const f=e.target.files[0]; if(!f) return
   try { const picks = parseSheet(await f.arrayBuffer()); S.sheet = {picks, name:f.name, loadedAt:new Date().toISOString()}; save(); location.reload(); }
   catch(err){ alert('Could not read that spreadsheet: '+err.message); } };
 $('#sheetClear').onclick = () => { S.sheet=null; save(); location.reload(); };
-$('#ntfy').onchange = e => { S.ntfy = e.target.value.trim(); save(); renderHeader(); };
-$('#ntfyTest').onclick = async () => { if(!S.ntfy) return alert('Enter a topic first.');
-  try { await fetch('https://ntfy.sh/'+encodeURIComponent(S.ntfy), {method:'POST', body:'Ten Lives is talking to you. 🏈', headers:{Title:'Test ping', Tags:'football'}}); $('#ntfyLink').innerHTML += ' <b style="color:var(--good)">Sent!</b>'; }
+$('#ntfyTest').onclick = async () => {
+  try { await fetch('https://ntfy.sh/'+NTFY, {method:'POST', body:'Ten Lives is talking to you. 🏈', headers:{Title:'Test ping', Tags:'football'}}); $('#ntfyLink').innerHTML = '<b style="color:var(--good)">Sent!</b>'; }
   catch(err){ alert('Ping failed: '+err.message); } };
 
 // ---------- live refresh from ESPN (lines, scores, FPI) ----------
