@@ -217,6 +217,7 @@ aside{position:sticky;top:96px;align-self:start;display:flex;flex-direction:colu
 .standings .pk{display:inline-flex;gap:3px;flex-wrap:wrap;justify-content:center;max-width:150px}
 .standings .pk img{width:24px;height:24px;object-fit:contain;border-radius:4px;padding:1px;background:rgba(0,0,0,.25);border:2px solid transparent}
 .standings .pk img.W{border-color:var(--good)} .standings .pk img.L{border-color:var(--bad)} .standings .pk img.X{border-color:var(--flag)}
+.standings .pk.app img{border-style:dashed}
 .crowd{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .crowd span{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:3px 10px 3px 4px;font-family:var(--cond);font-size:14px;font-weight:600}
 .crowd span img{width:22px;height:22px;object-fit:contain}
@@ -293,9 +294,10 @@ const LS = 'tenlives-2026';
 let S = { picks:{}, livesAdj:0, view:D.currentWeek, tab:'week', conf:new Set(), q:'', hideUsed:true, legalOnly:false, homeOnly:false, team:null, tq:'', tconf:new Set(), tf:{illegal:true, flips:false, comfort:false, home:false, past:false}, sort:'p',
           obj:'lin', ratings:'blend', drift:2.5, hfa:2.4, comfort:21, horizon:13, sheet:null };
 const NTFY = 'tenlives-k7q2m9';
+const MYNAME = (D.picks && D.picks.me) || 'B Spak'; S.me = MYNAME;
 try { Object.assign(S, JSON.parse(localStorage.getItem(LS)||'{}')); S.conf = new Set(S.conf||[]); S.tconf = new Set(S.tconf||[]); S.tf = {illegal:true,flips:false,comfort:false,home:false,past:false,...(S.tf||{})}; } catch(e){}
 if (S.sheet && S.sheet.picks && (!D.picks || S.sheet.loadedAt > D.fetched)) D.picks = {...S.sheet.picks, source:'local'};
-const ME = D.picks?.players.find(p=>p.name===D.picks.me);
+const ME = D.picks?.players.find(p=>p.name===S.me);
 if (ME) for (const w in ME.picks) S.picks[w] = ME.picks[w].slice();
 const save = () => { try { localStorage.setItem(LS, JSON.stringify({...S, conf:[...S.conf], tconf:[...S.tconf]})); } catch(e){} };
 
@@ -391,6 +393,7 @@ function renderHeader(){
   $('#obj').value=S.obj; $('#ratings').value=S.ratings;
   $('#sheetStatus').innerHTML = D.picks ? (D.picks.source==='local' ? `Using <b>${esc(S.sheet.name)}</b> loaded ${esc(S.sheet.loadedAt.replace('T',' ').slice(0,16))} · ${D.picks.players.length} players` : `Published copy from ${esc(D.fetched.replace('T',' '))} · ${D.picks.players.length} players`) : 'No comp picks loaded.';
   $('#sheetClear').style.display = S.sheet ? '' : 'none';
+
  $('#horizon').value=S.horizon; $('#horizonOut').value=S.horizon; $('#drift').value=S.drift; $('#driftOut').value=S.drift; $('#hfa').value=S.hfa; $('#hfaOut').value=S.hfa; $('#comfort').value=S.comfort; $('#comfortOut').value=S.comfort;
 }
 function renderSlots(){
@@ -402,11 +405,19 @@ function renderSlots(){
   for (let i=rows.length;i<cap(S.view);i++) rows.push(`<div class="slot empty">— no legal team left for this slot —</div>`);
   $('#slots').innerHTML=rows.join('');
   const e = rec.reduce((s,t)=>s+1-assess(t,S.view).p,0);
-  $('#slotHint').textContent = rec.length? `Gold rows are the optimiser's picks for this week (≈${e.toFixed(2)} expected lives lost). Lock them in or pick your own from the cards.` : (picks.length>=cap(S.view)?`Week complete — ${cap(S.view)} locked in.`:'');
+  const src = ME?.source?.[S.view]; const pubNote = src==='sheet' ? ' Picks for this week come from the comp spreadsheet (it overrides the app).' : (S.published?.week===S.view ? ` Sent to the bot ${new Date(S.published.at).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})}.` : (src==='app' ? ' Picks published from the app.' : ''));
+  $('#slotHint').textContent = (rec.length? `Gold rows are the optimiser's picks for this week (≈${e.toFixed(2)} expected lives lost). Lock them in or pick your own from the cards.` : (picks.length>=cap(S.view)?`Week complete — ${cap(S.view)} locked in.`:'')) + pubNote;
   $('#slots').querySelectorAll('[data-lock]').forEach(b=>b.onclick=()=>togglePick(b.dataset.lock));
   $('#slots').querySelectorAll('[data-un]').forEach(b=>b.onclick=()=>togglePick(b.dataset.un));
 }
-function togglePick(id){ const arr = S.picks[S.view] ??= []; const i=arr.indexOf(id); if(i>=0) arr.splice(i,1); else if(arr.length<cap(S.view) && !usedTeams().has(id)) arr.push(id); if(!arr.length) delete S.picks[S.view]; save(); render(); }
+function togglePick(id){ const arr = S.picks[S.view] ??= []; const i=arr.indexOf(id); if(i>=0) arr.splice(i,1); else if(arr.length<cap(S.view) && !usedTeams().has(id)) arr.push(id); if(!arr.length) delete S.picks[S.view]; save(); publishPicks(S.view); render(); }
+let pubTimer=null;
+function publishPicks(w){ // send this week's picks to the bot via ntfy (debounced so one message per burst of taps)
+  clearTimeout(pubTimer); pubTimer=setTimeout(async()=>{
+    const body=JSON.stringify({player:S.me, week:w, picks:S.picks[w]||[], at:new Date().toISOString()});
+    try { await fetch('https://ntfy.sh/'+NTFY+'-picks',{method:'POST',body,headers:{Title:'picks',Tags:'memo'}}); S.published={week:w,at:new Date().toISOString()}; save(); renderSlots(); }
+    catch(e){ console.warn('publish failed',e); }
+  },1200); }
 
 function renderWeek(){
   const used=usedTeams(); const confs=[...new Set(POOL.map(t=>t.conf))].sort();
@@ -549,19 +560,19 @@ function renderRivals(){
     return {p, lost, used, exp, strength, out: lost>=LIVES};
   }).sort((a,b)=>a.lost-b.lost || a.exp-b.exp);
   const head = `<tr><th style="text-align:left">Player</th><th>Lives</th><th>Teams left</th><th>Outlook<br><small>exp. lives lost</small></th><th>Avg FPI left</th>${WEEKS.map(w=>`<th class="${w===D.currentWeek?'now':''}">W${w}</th>`).join('')}</tr>`;
-  const body = rows.map(({p,lost,used,exp,strength,out},i)=>`<tr class="${p.name===D.picks.me?'me':''} ${out?'out':''}">
-    <td class="player">${i+1}. ${esc(p.name)}${p.name===D.picks.me?' (you)':''}</td>
+  const body = rows.map(({p,lost,used,exp,strength,out},i)=>`<tr class="${p.name===S.me?'me':''} ${out?'out':''}">
+    <td class="player">${i+1}. ${esc(p.name)}${p.name===S.me?' (you)':''}</td>
     <td><span class="balls">${[...Array(LIVES).keys()].map(k=>`<i class="${k<lost?'lost':''}"></i>`).join('')}</span></td>
     <td class="num">${POOL.length-used.size}</td>
     <td class="num">${out?'—':exp.toFixed(1)}</td>
     <td class="num">${strength>0?'+':''}${strength.toFixed(1)}</td>
-    ${WEEKS.map(w=>`<td><span class="pk">${(p.picks[w]||[]).map(id=>LOGO(T[id], pickOutcome(id,w)||'')).join('')}</span></td>`).join('')}
+    ${WEEKS.map(w=>`<td title="${p.source?.[w]==='app'?'from the app (not yet in the spreadsheet)':''}"><span class="pk ${p.source?.[w]==='app'?'app':''}">${(p.picks[w]||[]).map(id=>LOGO(T[id], pickOutcome(id,w)||'')).join('')}</span></td>`).join('')}
   </tr>`).join('');
   const cw = D.picks.players.some(p=>p.picks[S.view]) ? S.view : weeksDone[weeksDone.length-1];
   const counts = {}; if (cw) for (const p of D.picks.players) for (const id of (p.picks[cw]||[])) counts[id]=(counts[id]||0)+1;
   const crowd = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([id,n])=>{ const o=pickOutcome(id,cw)||''; return `<span class="${o}">${LOGO(T[id])}${esc(T[id].name)} <small>×${n}</small></span>`; }).join('');
   $('#view').innerHTML = `<div class="standings"><table>${head}${body}</table></div>
-    <div class="legend"><span><i style="border:2px solid var(--good)"></i>won</span><span><i style="border:2px solid var(--bad)"></i>lost a life</span><span><i style="border:2px solid var(--flag)"></i>illegal pick (FCS / bye)</span><span>Outlook = expected lives lost from here if they pick optimally with what they have left</span></div>
+    <div class="legend"><span><i style="border:2px solid var(--good)"></i>won</span><span><i style="border:2px solid var(--bad)"></i>lost a life</span><span><i style="border:2px solid var(--flag)"></i>illegal pick (FCS / bye)</span><span><i style="border:2px dashed var(--chalk-dim)"></i>from the app, not yet in the sheet</span><span>Outlook = expected lives lost from here if they pick optimally with what they have left</span></div>
     ${cw?`<div class="panel" style="margin-top:14px"><h2>The crowd <span>week ${cw}</span></h2><div class="crowd">${crowd||'—'}</div></div>`:''}`;
 }
 function render(){ recompute(); renderHeader(); renderSlots(); ({plan:renderPlan, team:renderTeam, rivals:renderRivals}[S.tab]||renderWeek)(); }
