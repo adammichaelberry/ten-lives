@@ -36,17 +36,13 @@ DEFAULT_PICKS = 5
 ME = "B Spak"                         # my column in the comp spreadsheet
 PICKS_XLSX = "Power_4_Survivor_2026.xlsx"
 SHEET_URL = os.environ.get("SHEET_URL", "").strip()
-NTFY_TOPIC = (os.environ.get("NTFY_TOPIC", "").strip() or "tenlives-k7q2m9")
+from notify import TOPIC as NTFY_TOPIC
 MOVE_ALERT = float(os.environ.get("MOVE_ALERT", "3") or 3)
 COMFORT = 21
 
+from notify import send as _send
 def ntfy(title, body, tags="football", url=None, priority="default"):
-    if not NTFY_TOPIC:
-        print("  (no NTFY_TOPIC set — would notify:", title, "|", body.replace(chr(10), " / "), ")"); return
-    h = {"Title": title, "Tags": tags, "Priority": priority}
-    if url: h["Click"] = url
-    try: requests.post(f"https://ntfy.sh/{NTFY_TOPIC}", data=body.encode(), headers=h, timeout=20)
-    except Exception as e: print("  ntfy failed:", e)
+    _send(title, body, tags=tags.split(","), click=url, priority=4 if priority == "high" else 3)
 
 HERE = pathlib.Path(__file__).parent
 S = requests.Session()
@@ -200,6 +196,45 @@ if xlsx:
         print(f"  read picks for {len(players)} players from {pathlib.Path(xlsx).name}")
     except Exception as e:
         print("  couldn't read picks spreadsheet:", e)
+
+# ---------- app-published picks (via ntfy) ----------
+# The app posts {"player","week","picks":[team ids],"at"} to <topic>-picks (only ME is accepted). ntfy caches ~12h, so we
+# keep everything we've seen in app_picks.json (committed) and merge. Spreadsheet wins where it has picks.
+app_path = HERE / "app_picks.json"
+app_picks = json.loads(app_path.read_text()) if app_path.exists() else {}   # {player: {week: {"picks": [...], "at": iso}}}
+try:
+    r = S.get(f"https://ntfy.sh/{NTFY_TOPIC}-picks/json", params={"poll": 1, "since": "12h"}, timeout=30)
+    n = 0
+    for line in r.text.splitlines():
+        try: m = json.loads(line)
+        except ValueError: continue
+        if m.get("event") != "message": continue
+        try: body = json.loads(m.get("message", ""))
+        except ValueError: continue
+        pl, wk = body.get("player"), str(body.get("week"))
+        if pl != ME or not wk.isdigit() or not isinstance(body.get("picks"), list): continue   # only our own team's picks
+        cur = app_picks.setdefault(pl, {}).get(wk)
+        if not cur or body.get("at", "") >= cur.get("at", ""):
+            app_picks[pl][wk] = {"picks": [str(x) for x in body["picks"]], "at": body.get("at", "")}; n += 1
+    print(f"  app picks: {n} new message(s), {sum(len(v) for v in app_picks.values())} player-weeks on file")
+    app_path.write_text(json.dumps(app_picks, indent=0, sort_keys=True))
+except Exception as e:
+    print("  couldn't poll app picks:", e)
+if app_picks:
+    picks = picks or {"me": ME, "players": []}
+    by_name = {p["name"]: p for p in picks["players"]}
+    for pl, weeks in app_picks.items():
+        p = by_name.get(pl)
+        if not p:
+            p = {"name": pl, "picks": {}}; picks["players"].append(p); by_name[pl] = p
+        p.setdefault("source", {})
+        for wk, ent in weeks.items():
+            if p["picks"].get(wk):
+                p["source"][wk] = "sheet"
+            else:
+                p["picks"][wk] = ent["picks"]; p["source"][wk] = "app"
+    for p in picks["players"]:
+        for wk in p["picks"]: p.setdefault("source", {}).setdefault(wk, "sheet")
 
 # current week = first week with any uncompleted game
 now = datetime.datetime.now(datetime.timezone.utc)
