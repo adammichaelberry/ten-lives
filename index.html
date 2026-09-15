@@ -391,7 +391,7 @@ function renderHeader(){
   $('#wkTitle').textContent = `${S.view} · ${D.weekDates[S.view]||''}`;
   $('#meta').innerHTML = `Fetched ${esc(D.fetched.replace('T',' '))}. Current week ${D.currentWeek}. ${POOL.length} pool teams across ${WEEKS.length} weeks — ${TOTAL_PICKS()} picks needed (6 in weeks 1–3, then 5).`;
   $('#obj').value=S.obj; $('#ratings').value=S.ratings;
-  $('#sheetStatus').innerHTML = D.picks ? (D.picks.source==='local' ? `Using <b>${esc(S.sheet.name)}</b> loaded ${esc(S.sheet.loadedAt.replace('T',' ').slice(0,16))} · ${D.picks.players.length} players · shared with the bot (published copy catches up within 6 h)` : `Published copy from ${esc(D.fetched.replace('T',' '))} · ${D.picks.players.length} players`) : 'No comp picks loaded.';
+  $('#sheetStatus').innerHTML = D.picks ? (D.picks.source==='local' ? `Using <b>${esc(S.sheet.name)}</b> loaded ${esc(S.sheet.loadedAt.replace('T',' ').slice(0,16))} · ${D.picks.players.length} players · ${S.sheet.shared ? (S.sheet.shared.ok===S.sheet.shared.total ? 'shared with the bot ✓' : `<b style="color:var(--bad)">only ${S.sheet.shared.ok}/${S.sheet.shared.total} columns shared${S.sheet.shared.err?' — '+esc(S.sheet.shared.err):''}</b>`) : '<b style="color:var(--amber)">not yet shared — load it again</b>'}` : `Published copy from ${esc(D.fetched.replace('T',' '))} · ${D.picks.players.length} players`) : 'No comp picks loaded.';
   $('#sheetClear').style.display = S.sheet ? '' : 'none';
 
  $('#horizon').value=S.horizon; $('#horizonOut').value=S.horizon; $('#drift').value=S.drift; $('#driftOut').value=S.drift; $('#hfa').value=S.hfa; $('#hfaOut').value=S.hfa; $('#comfort').value=S.comfort; $('#comfortOut').value=S.comfort;
@@ -600,10 +600,16 @@ function parseSheet(buf){
 }
 $('#sheetFile').onchange = async e => { const f=e.target.files[0]; if(!f) return;
   try { const picks = parseSheet(await f.arrayBuffer()); S.sheet = {picks, name:f.name, loadedAt:new Date().toISOString()}; save();
-        $('#sheetStatus').textContent = 'Sharing with the bot…';
-        // publish every player's picks so the bot (and your partner's copy of the app) get the same sheet
-        const at = new Date().toISOString();
-        await Promise.all(picks.players.map(p => fetch('https://ntfy.sh/'+NTFY+'-picks', {method:'POST', body: JSON.stringify({type:'sheet', player:p.name, picks:p.picks, at}), headers:{Title:'sheet', Tags:'memo'}}).catch(()=>{})));
+        // publish every player's column so the bot (and your partner's copy of the app) get the same sheet — one at a time, and report the outcome
+        const at = new Date().toISOString(); let ok=0, err='';
+        for (const p of picks.players){
+          $('#sheetStatus').textContent = `Sharing with the bot… ${ok}/${picks.players.length}`;
+          try { const r = await fetch('https://ntfy.sh/'+NTFY+'-picks', {method:'POST', body: JSON.stringify({type:'sheet', player:p.name, picks:p.picks, at}), headers:{Title:'sheet', Tags:'memo'}});
+                if (r.ok) ok++; else err = 'ntfy said '+r.status; }
+          catch(e){ err = e.message; }
+        }
+        S.sheet.shared = {ok, total:picks.players.length, err}; save();
+        if (ok < picks.players.length) alert(`Sheet loaded on this phone, but only ${ok} of ${picks.players.length} columns reached the bot (${err||'unknown error'}). Try Load .xlsx again, or upload the file to the repo.`);
         location.reload(); }
   catch(err){ alert('Could not read that spreadsheet: '+err.message); } };
 $('#sheetClear').onclick = () => { S.sheet=null; save(); location.reload(); };
