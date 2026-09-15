@@ -391,7 +391,7 @@ function renderHeader(){
   $('#wkTitle').textContent = `${S.view} · ${D.weekDates[S.view]||''}`;
   $('#meta').innerHTML = `Fetched ${esc(D.fetched.replace('T',' '))}. Current week ${D.currentWeek}. ${POOL.length} pool teams across ${WEEKS.length} weeks — ${TOTAL_PICKS()} picks needed (6 in weeks 1–3, then 5).`;
   $('#obj').value=S.obj; $('#ratings').value=S.ratings;
-  $('#sheetStatus').innerHTML = D.picks ? (D.picks.source==='local' ? `Using <b>${esc(S.sheet.name)}</b> loaded ${esc(S.sheet.loadedAt.replace('T',' ').slice(0,16))} · ${D.picks.players.length} players` : `Published copy from ${esc(D.fetched.replace('T',' '))} · ${D.picks.players.length} players`) : 'No comp picks loaded.';
+  $('#sheetStatus').innerHTML = D.picks ? (D.picks.source==='local' ? `Using <b>${esc(S.sheet.name)}</b> loaded ${esc(S.sheet.loadedAt.replace('T',' ').slice(0,16))} · ${D.picks.players.length} players · shared with the bot (published copy catches up within 6 h)` : `Published copy from ${esc(D.fetched.replace('T',' '))} · ${D.picks.players.length} players`) : 'No comp picks loaded.';
   $('#sheetClear').style.display = S.sheet ? '' : 'none';
 
  $('#horizon').value=S.horizon; $('#horizonOut').value=S.horizon; $('#drift').value=S.drift; $('#driftOut').value=S.drift; $('#hfa').value=S.hfa; $('#hfaOut').value=S.hfa; $('#comfort').value=S.comfort; $('#comfortOut').value=S.comfort;
@@ -599,7 +599,12 @@ function parseSheet(buf){
   return { me: D.picks?.me || 'B Spak', players: Object.entries(players).map(([n,p])=>({name:n, picks:p})) };
 }
 $('#sheetFile').onchange = async e => { const f=e.target.files[0]; if(!f) return;
-  try { const picks = parseSheet(await f.arrayBuffer()); S.sheet = {picks, name:f.name, loadedAt:new Date().toISOString()}; save(); location.reload(); }
+  try { const picks = parseSheet(await f.arrayBuffer()); S.sheet = {picks, name:f.name, loadedAt:new Date().toISOString()}; save();
+        $('#sheetStatus').textContent = 'Sharing with the bot…';
+        // publish every player's picks so the bot (and your partner's copy of the app) get the same sheet
+        const at = new Date().toISOString();
+        await Promise.all(picks.players.map(p => fetch('https://ntfy.sh/'+NTFY+'-picks', {method:'POST', body: JSON.stringify({type:'sheet', player:p.name, picks:p.picks, at}), headers:{Title:'sheet', Tags:'memo'}}).catch(()=>{})));
+        location.reload(); }
   catch(err){ alert('Could not read that spreadsheet: '+err.message); } };
 $('#sheetClear').onclick = () => { S.sheet=null; save(); location.reload(); };
 $('#ntfyTest').onclick = async () => {
@@ -607,6 +612,28 @@ $('#ntfyTest').onclick = async () => {
   catch(err){ alert('Ping failed: '+err.message); } };
 
 // ---------- live refresh from ESPN (lines, scores, FPI) ----------
+// ---------- pull the latest picks / shared sheets straight from the bot channel (no waiting for the 6-hourly run) ----------
+async function syncChannel(){
+  try {
+    const r = await fetch('https://ntfy.sh/'+NTFY+'-picks/json?poll=1&since=12h'); const txt = await r.text();
+    const msgs = txt.split('\n').filter(Boolean).map(l=>{ try{ const m=JSON.parse(l); return m.event==='message'? JSON.parse(m.message) : null; }catch(e){ return null; } }).filter(Boolean);
+    let changed=false;
+    D.picks ??= {me:MYNAME, players:[]};
+    const byName = Object.fromEntries(D.picks.players.map(p=>[p.name,p]));
+    // shared spreadsheet columns
+    for (const m of msgs.filter(m=>m.type==='sheet' && m.player && m.picks && typeof m.picks==='object').sort((a,b)=>(a.at||'').localeCompare(b.at||''))){
+      let p = byName[m.player]; if(!p){ p={name:m.player, picks:{}}; D.picks.players.push(p); byName[m.player]=p; }
+      for (const w in m.picks) if (Array.isArray(m.picks[w]) && (!p.picks[w] || (m.at||'') > D.fetched)) { p.picks[w]=m.picks[w].map(String); changed=true; }
+    }
+    // our own app-tapped picks, newest per week, only if newer than the published data
+    const ours = msgs.filter(m=>m.player===MYNAME && !m.type && Array.isArray(m.picks) && (m.at||'') > D.fetched);
+    const latest = {}; for (const m of ours) if (!latest[m.week] || m.at > latest[m.week].at) latest[m.week]=m;
+    let p = byName[MYNAME]; if(!p && Object.keys(latest).length){ p={name:MYNAME, picks:{}}; D.picks.players.push(p); }
+    for (const w in latest){ if (p.source?.[w]==='sheet') continue; p.picks[w]=latest[w].picks.map(String); (p.source ??= {})[w]='app'; S.picks[w]=p.picks[w].slice(); changed=true; }
+    if (changed){ save(); render(); }
+    return changed;
+  } catch(e){ console.warn('channel sync failed', e); return false; }
+}
 async function liveRefresh(){
   const el=$('#live'); if(!el) return;
   if (location.protocol==='file:') { el.textContent='Live refresh works when hosted (not from a local file).'; return; }
@@ -626,14 +653,14 @@ async function liveRefresh(){
       if (cat.fpi){ const v=Object.fromEntries(names.map((k,i)=>[k,cat.fpi.values[i]])); t.fpi=+v.fpi.toFixed(2); t.fpiRank=v.fpirank; t.wins=v.numwins; t.losses=v.numlosses; }
       if (cat.resume){ const v=Object.fromEntries(rnames.map((k,i)=>[k,cat.resume.values[i]])); t.ap = v['APRank/CFPRank']||null; } }
     const nextW = WEEKS.find(w=>D.games.some(g=>g.week===w && !g.completed)); if (nextW && nextW!==D.currentWeek){ D.currentWeek=nextW; if (S.view<nextW) S.view=nextW; }
-    el.innerHTML = `<b style="color:var(--good)">Live</b> · ${n} games refreshed from ESPN at ${new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})} (Sagarin and picks update via GitHub twice daily).`;
+    el.innerHTML = `<b style="color:var(--good)">Live</b> · ${n} games refreshed from ESPN at ${new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})}; picks synced from the bot channel. Sagarin updates every 6 h via GitHub.`;
     render();
   } catch(err){ el.textContent='Live refresh failed ('+err.message+') — showing the last published data.'; }
 }
 $('#reset').onclick=()=>{ if(confirm('Clear every pick and life adjustment?')){ S.picks={}; S.livesAdj=0; save(); render(); } };
 if (window.innerWidth>980) document.querySelectorAll('details.fold').forEach(d=>d.open=true);
 render();
-liveRefresh();
+liveRefresh().then(()=>syncChannel());
 })();
 </script>
 </body>

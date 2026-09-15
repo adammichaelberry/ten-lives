@@ -211,19 +211,37 @@ try:
         if m.get("event") != "message": continue
         try: body = json.loads(m.get("message", ""))
         except ValueError: continue
-        pl, wk = body.get("player"), str(body.get("week"))
+        pl = body.get("player")
+        if body.get("type") == "sheet" and pl and isinstance(body.get("picks"), dict):
+            # a whole player's column from a spreadsheet loaded in the app — treated as spreadsheet data
+            store = app_picks.setdefault("_sheet", {}).setdefault(pl, {})
+            for wk, ids in body["picks"].items():
+                if str(wk).isdigit() and isinstance(ids, list):
+                    cur = store.get(str(wk))
+                    if not cur or body.get("at", "") >= cur.get("at", ""):
+                        store[str(wk)] = {"picks": [str(x) for x in ids], "at": body.get("at", "")}; n += 1
+            continue
+        wk = str(body.get("week"))
         if pl != ME or not wk.isdigit() or not isinstance(body.get("picks"), list): continue   # only our own team's picks
         cur = app_picks.setdefault(pl, {}).get(wk)
         if not cur or body.get("at", "") >= cur.get("at", ""):
             app_picks[pl][wk] = {"picks": [str(x) for x in body["picks"]], "at": body.get("at", "")}; n += 1
-    print(f"  app picks: {n} new message(s), {sum(len(v) for v in app_picks.values())} player-weeks on file")
+    print(f"  app picks: {n} new entries, {sum(len(v) for k, v in app_picks.items() if k != '_sheet')} of ours + {sum(len(w) for w in app_picks.get('_sheet', {}).values())} sheet player-weeks on file")
     app_path.write_text(json.dumps(app_picks, indent=0, sort_keys=True))
 except Exception as e:
     print("  couldn't poll app picks:", e)
 if app_picks:
     picks = picks or {"me": ME, "players": []}
     by_name = {p["name"]: p for p in picks["players"]}
+    # spreadsheet columns shared from the app fill in anything the repo's copy lacks
+    for pl, weeks in app_picks.get("_sheet", {}).items():
+        p = by_name.get(pl)
+        if not p:
+            p = {"name": pl, "picks": {}}; picks["players"].append(p); by_name[pl] = p
+        for wk, ent in weeks.items():
+            if not p["picks"].get(wk): p["picks"][wk] = ent["picks"]
     for pl, weeks in app_picks.items():
+        if pl == "_sheet": continue
         p = by_name.get(pl)
         if not p:
             p = {"name": pl, "picks": {}}; picks["players"].append(p); by_name[pl] = p
